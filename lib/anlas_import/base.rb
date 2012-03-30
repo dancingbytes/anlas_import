@@ -21,8 +21,12 @@ module AnlasImport
 
           loop do
             
-            ::AnlasImport::Manager.new(import_dir, log_dir, db_conf_file).run do |items|              
-              #  "Execute some block. Usefull for Sphinx reindex and reset cache."
+            ::AnlasImport::Manager.new(import_dir, log_dir, db_conf_file).run do |inserted, updated|
+
+              updated.uniq.each do |id|
+                Item.where(:_id => id).first.try(&:update_sphinx)
+              end
+
             end
 
             sleep 20 * 60 # 20 minutes

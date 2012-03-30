@@ -13,7 +13,9 @@ module AnlasImport
         :db_conf  => db_conf_file
       }
 
-      @errors, @has_files, @updaed_items  = [], false, []
+      @errors         = []
+      @inserted_items = []
+      @updaed_items   = []
 
       check_import_dir
       read_db_config
@@ -25,7 +27,11 @@ module AnlasImport
       before
       processing if @errors.empty?
       after
-      yield(@updaed_items.flatten.uniq) if block_given? && @has_files
+
+      yield(
+        @inserted_items.flatten.uniq, 
+        @updaed_items.flatten.uniq
+      ) if block_given? && @has_files
 
     end # run
 
@@ -42,6 +48,7 @@ module AnlasImport
     def before
 
       open_db_connection
+      @has_files = false
       extract_zip_files
 
     end # before_start
@@ -54,7 +61,7 @@ module AnlasImport
       end
 
       close_logger
-      # close_db_connect
+      close_db_connect
       
     end # after
 
@@ -64,22 +71,33 @@ module AnlasImport
       return unless files && files.size > 0
 
       @has_files = true
+      
+      #threads = []
+      start = ::Time.now.to_i
+      @errors << "\n\n[#{Time.now.strftime('%H:%M:%S %d-%m-%Y')}] Обработка файлов импорта ===================\n"
+
       files.each do |xml_file|
         
-        start = ::Time.now.to_i
-        
-        #@errors << "[#{Time.now.strftime('%H:%M:%S %d-%m-%Y')}] Обрабатывается файл #{xml_file}"
-        
-        worker = ::AnlasImport::Worker.new(xml_file, @conn).parse
-        @errors << worker.errors
-        @updaed_items << worker.updated
-        
-        #@errors << "Добавлено товаров: #{worker.inserted}"
-        #@errors << "Обновлено товаров: #{worker.updated.size}"
-        #@errors << "Затрачено времени: #{Time.now.to_i - start} секунд"
-        #@errors << "==========================================================================="
+        #threads << Thread.new {
+          
+          worker = ::AnlasImport::Worker.new(xml_file, @conn).parse
 
+          @errors         << worker.errors
+          @inserted_items << worker.inserted
+          @updaed_items   << worker.updated
+
+        #}
+        
       end # each
+
+      #threads.join
+
+      @errors << "Добавлено товаров: #{@inserted_items.length}\n"
+      @errors << "Обновлено товаров: #{@inserted_items.length}\n"
+      @errors << "Затрачено времени: #{Time.now.to_i - start} секунд.\n"
+      @errors << "===========================================================================\n\n"
+
+      self
 
     end # processing
 
@@ -104,6 +122,7 @@ module AnlasImport
     end # read_db_config
 
     def open_db_connection
+
       begin
         ::Mongoid.database.collection("admin").find_one
         @conn = ::Mongoid.database
@@ -165,7 +184,7 @@ module AnlasImport
     def close_db_connect
 
       return unless @conn
-      @conn.close rescue nil
+      @conn.logout rescue nil
       @conn = nil
 
     end # close_db_connect

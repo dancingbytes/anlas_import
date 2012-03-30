@@ -13,7 +13,7 @@ module AnlasImport
       unless @file && ::FileTest.exists?(@file)
         @errors << "Файл не найден: #{@file}\n"
       else
-        @errors << "Не могу соединиться с базой данных!" unless @conn
+        @errors << "Не могу соединиться с базой данных!\n" unless @conn
       end # unless
       
     end # new
@@ -32,7 +32,7 @@ module AnlasImport
     def updated
       @upd
     end # updated
-    
+
     def inserted
       @ins
     end # insert
@@ -44,8 +44,8 @@ module AnlasImport
       # Блок сохраниения данных в базу
       @saver = lambda { |artikul, artikulprod, name, price, price_wholesale, price_old, in_order|
                         
-        name = name.strip.escape
-        artikul = artikul.strip.escape
+        name        = name.strip.escape
+        artikul     = artikul.strip.escape
         artikulprod = artikulprod.strip.escape
 
         # Проверка товара на наличие букв "яя" вначле названия (такие товары не выгружаем)
@@ -66,7 +66,7 @@ module AnlasImport
     def work_with_file
 
       unless (catalog = catalog_for_import( prefix_file ))
-       @errors << "Каталог выгрузки не найден! Файл: #{@file}"
+       @errors << "Каталог выгрузки не найден! Файл: #{@file}\n"
       else
 
         init_saver(catalog)
@@ -109,26 +109,26 @@ module AnlasImport
     def insert(name, price, price_wholesale, price_old, in_order, artikulprod, artikul, collector_id)
       
       doc = {
-        "name" => name,
-        "price" => price,
+        "name"            => name,
+        "price"           => price,
         "price_wholesale" => price_wholesale,
-        "price_old" => price_old,
+        "price_old"       => price_old,
         "marking_of_goods" => artikul,
-        "available" => in_order,
+        "available"       => in_order,
         "marking_of_goods_manufacturer" => artikulprod,
-        "meta_title" => name,
+        "meta_title"      => name,
         "meta_description" => name,
-        "imported_at" => ::Time.now.utc,
-        "created_at" => ::Time.now.utc
+        "imported_at"     => ::Time.now.utc,
+        "created_at"      => ::Time.now.utc
       }
       
-      opts = {:safe => true}
+      opts = { :safe => true }
        
       begin
         @conn.collection("items").insert(doc, opts)
         return true
       rescue => e
-        @errors << "#{e}"
+        @errors << "#{e}\n"
         return false
       end # begin
       
@@ -136,27 +136,27 @@ module AnlasImport
 
     def update(name, price, price_wholesale, price_old, in_order, artikulprod, artikul)
       
-      selector = {"marking_of_goods" => artikul}
+      selector = { "marking_of_goods" => artikul }
         
       doc = {
-        "name" => name,
-        "price" => price,
+        "name"            => name,
+        "price"           => price,
         "price_wholesale" => price_wholesale,
-        "price_old" => price_old,
-        "available" => in_order,
+        "price_old"       => price_old,
+        "available"       => in_order,
         "marking_of_goods_manufacturer" => artikulprod,
-        "meta_title" => name,
+        "meta_title"      => name,
         "meta_description" => name,
-        "imported_at" => ::Time.now.utc
+        "imported_at"     => ::Time.now.utc
       }
       
-      opts = {:safe => true}
+      opts = { :safe => true }
        
       begin
         @conn.collection("items").update(selector, doc, opts)
         return true
       rescue => e
-        @errors << "#{e}"
+        @errors << "#{e}\n"
         return false
       end # begin
       
