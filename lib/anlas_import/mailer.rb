@@ -1,5 +1,27 @@
-# encoding: UTF-8
+# encoding: utf-8
 require 'net/smtp'
+
+module Net
+
+  class InternetMessageIO
+
+    private
+
+    def each_crlf_line(src)
+      
+      buffer_filling(@wbuf, src) do
+        
+        while line = @wbuf.slice!(/\A.*(?:\n|\r\n|\r(?!\z))/u)
+          yield line.chomp("\n") + "\r\n"
+        end
+
+      end # do
+
+    end # each_crlf_line
+
+  end # InternetMessageIO  
+
+end # Net
 
 module AnlasImport
 

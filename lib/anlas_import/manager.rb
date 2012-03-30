@@ -13,10 +13,7 @@ module AnlasImport
         :db_conf  => db_conf_file
       }
 
-      @errors         = []
-      @inserted_items = []
-      @updaed_items   = []
-
+      reset
       check_import_dir
       read_db_config
 
@@ -25,13 +22,24 @@ module AnlasImport
     def run
 
       before
-      processing if @errors.empty?
-      after
+      
+      if @errors.empty?
 
-      yield(
-        @inserted_items.flatten.uniq, 
-        @updaed_items.flatten.uniq
-      ) if block_given? && @has_files
+        start = ::Time.now.to_i
+        @errors << "[#{Time.now.strftime('%H:%M:%S %d-%m-%Y')}] Обработка файлов импорта ============================"
+        
+        processing
+
+        @errors << "Добавлено товаров: #{@inserted_items.length}"
+        @errors << "Обновлено товаров: #{@updaed_items.length}"
+        @errors << "Затрачено времени: #{ '%0.3f' % (Time.now.to_f - start) } секунд."
+        @errors << "===========================================================================\n"
+
+      end # if
+
+      after
+      yield(@inserted_items, @updaed_items ) if block_given? && @has_files
+      reset
 
     end # run
 
@@ -45,10 +53,18 @@ module AnlasImport
 
     private
 
+    def reset
+
+      @errors         = []
+      @inserted_items = []
+      @updaed_items   = []
+      @has_files      = false
+
+    end # reset
+
     def before
 
       open_db_connection
-      @has_files = false
       extract_zip_files
 
     end # before_start
@@ -56,13 +72,13 @@ module AnlasImport
     def after
 
       unless @errors.empty?
-        msg = self.log(@errors.flatten.join("\n\r"))
+        msg = self.log(@errors.flatten.join("\n"))
         ::AnlasImport::Mailer.new.send_message("Выгрузка данных из 1С. Ошибки.", msg)
       end
 
       close_logger
       close_db_connect
-      
+
     end # after
 
     def processing
@@ -70,32 +86,27 @@ module AnlasImport
       files = ::Dir.glob( ::File.join(@config[:dir], "**", "*.xml") )
       return unless files && files.size > 0
 
-      @has_files = true
-      
-      #threads = []
-      start = ::Time.now.to_i
-      @errors << "\n\n[#{Time.now.strftime('%H:%M:%S %d-%m-%Y')}] Обработка файлов импорта ===================\n"
+      @has_files = true      
+      threads    = []
 
       files.each do |xml_file|
         
-        #threads << Thread.new {
+        threads << Thread.new {
           
           worker = ::AnlasImport::Worker.new(xml_file, @conn).parse
 
-          @errors         << worker.errors
-          @inserted_items << worker.inserted
-          @updaed_items   << worker.updated
+          @errors << worker.errors
+          @inserted_items = @inserted_items.concat(worker.inserted)
+          @updaed_items   = @updaed_items.concat(worker.updated)
 
-        #}
+        }
         
       end # each
 
-      #threads.join
+      threads.map(&:join)
 
-      @errors << "Добавлено товаров: #{@inserted_items.length}\n"
-      @errors << "Обновлено товаров: #{@inserted_items.length}\n"
-      @errors << "Затрачено времени: #{Time.now.to_i - start} секунд.\n"
-      @errors << "===========================================================================\n\n"
+      @inserted_items.uniq!
+      @updaed_items.uniq!
 
       self
 

@@ -7,13 +7,13 @@ module AnlasImport
 
     def initialize(file, conn)
 
-      @errors, @ins, @upd = [], 0, []
+      @errors, @ins, @upd = [], [], []
       @file, @conn = file, conn
 
       unless @file && ::FileTest.exists?(@file)
-        @errors << "Файл не найден: #{@file}\n"
+        @errors << "Файл не найден: #{@file}"
       else
-        @errors << "Не могу соединиться с базой данных!\n" unless @conn
+        @errors << "Не могу соединиться с базой данных!" unless @conn
       end # unless
       
     end # new
@@ -29,7 +29,7 @@ module AnlasImport
       @errors
     end # report
 
-    def updated
+    def updated      
       @upd
     end # updated
 
@@ -52,9 +52,17 @@ module AnlasImport
         unless skip_by_name(name)
 
           if target_exists(artikul)
-            @upd << artikul if update(name, price, price_wholesale, price_old, in_order, artikulprod, artikul)
+            
+            if update(name, price, price_wholesale, price_old, in_order, artikulprod, artikul)
+              @upd << artikul 
+            end
+
           else
-            @ins += 1 if insert(name, price, price_wholesale, price_old, in_order, artikulprod, artikul, catalog)
+            
+            if insert(name, price, price_wholesale, price_old, in_order, artikulprod, artikul, catalog)
+              @ins << artikul 
+            end
+              
           end
 
         end # unless
@@ -66,7 +74,7 @@ module AnlasImport
     def work_with_file
 
       unless (catalog = catalog_for_import( prefix_file ))
-       @errors << "Каталог выгрузки не найден! Файл: #{@file}\n"
+       @errors << "Каталог выгрузки не найден! Файл: #{@file}"
       else
 
         init_saver(catalog)
@@ -123,12 +131,12 @@ module AnlasImport
       }
       
       opts = { :safe => true }
-       
+
       begin
         @conn.collection("items").insert(doc, opts)
         return true
       rescue => e
-        @errors << "#{e}\n"
+        @errors << "[INSERT: #{artikul}] #{e}"
         return false
       end # begin
       
@@ -151,12 +159,14 @@ module AnlasImport
       }
       
       opts = { :safe => true }
-       
+
+      # puts "selector: #{selector.inspect}"
+
       begin
-        @conn.collection("items").update(selector, doc, opts)
+        @conn.collection("items").update(selector, { "$set" => doc }, opts)
         return true
       rescue => e
-        @errors << "#{e}\n"
+        @errors << "[UPDATE: #{artikul}] #{e}"
         return false
       end # begin
       
