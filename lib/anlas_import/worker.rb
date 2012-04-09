@@ -133,8 +133,18 @@ module AnlasImport
       opts = { :safe => true }
 
       begin
+        
+        @conn.collection("admin").update(
+          {:name => "Item_counter"}, {"$inc" => {:count => 1}}, {:upsert => true}
+        )
+
+        counter = @conn.collection("admin").find_one(:name => "Item_counter")
+        doc["uri"] = (counter ? counter["count"] : 0)
+
         @conn.collection("items").insert(doc, opts)
+
         return true
+
       rescue => e
         @errors << "[INSERT: #{artikul}] #{e}"
         return false
@@ -160,11 +170,11 @@ module AnlasImport
       
       opts = { :safe => true }
 
-      # puts "selector: #{selector.inspect}"
-
       begin
+
         @conn.collection("items").update(selector, { "$set" => doc }, opts)
         return true
+
       rescue => e
         @errors << "[UPDATE: #{artikul}] #{e}"
         return false

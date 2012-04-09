@@ -87,23 +87,16 @@ module AnlasImport
       return unless files && files.size > 0
 
       @has_files = true      
-      threads    = []
 
       files.each do |xml_file|
         
-        threads << Thread.new {
-          
-          worker = ::AnlasImport::Worker.new(xml_file, @conn).parse
+        worker = ::AnlasImport::Worker.new(xml_file, @conn).parse
 
-          @errors << worker.errors
-          @inserted_items = @inserted_items.concat(worker.inserted)
-          @updaed_items   = @updaed_items.concat(worker.updated)
-
-        }
+        @errors << worker.errors
+        @inserted_items = @inserted_items.concat(worker.inserted)
+        @updaed_items   = @updaed_items.concat(worker.updated)
         
       end # each
-
-      threads.map(&:join)
 
       @inserted_items.uniq!
       @updaed_items.uniq!
