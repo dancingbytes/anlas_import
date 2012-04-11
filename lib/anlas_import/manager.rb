@@ -129,7 +129,7 @@ module AnlasImport
 
       begin
         ::Mongoid.database.collection("admin").find_one
-        @conn = ::Mongoid.database
+        @conn ||= ::Mongoid.database
       rescue => e
         @errors << "Нет соединения с базой данных."
       end # begin
@@ -186,11 +186,7 @@ module AnlasImport
     end # close_logger
 
     def close_db_connect
-
-      return unless @conn
-      @conn.logout rescue nil
-      @conn = nil
-
+      # no need for mongoid
     end # close_db_connect
 
   end # Manager
