@@ -71,11 +71,7 @@ module AnlasImport
 
     def after
 
-      unless @errors.empty?
-        msg = self.log(@errors.flatten.join("\n"))
-        ::AnlasImport::Mailer.new.send_message("Выгрузка данных из 1С. Ошибки.", msg)
-      end
-
+      self.log(@errors.flatten.join("\n")) unless @errors.empty?
       close_logger
       close_db_connect
 

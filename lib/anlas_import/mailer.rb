@@ -32,7 +32,7 @@ module AnlasImport
       @config = {
         :from       => "robot@anlas.ru",
         :from_alias => "robot",
-        :to         => "piliaiev@gmail.com", #"info@v-avto.ru",
+        :to         => "info@anlas.ru", #"info@v-avto.ru",
         :to_alias   => "admin",
         :domain     => "localhost",
         :port       => 25

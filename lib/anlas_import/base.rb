@@ -11,9 +11,9 @@ module AnlasImport
           
           puts "#{::Time.now} #{::AnlasImport::PROC_NAME} start"
           
-          import_dir = ::File.join("#{::Rails.root}", "tmp", "xml")
-          log_dir = ::File.join("#{::Rails.root}", "log")
-          db_conf_file = ::File.join("#{::Rails.root}", "config", "mongoid.yml")
+          import_dir    = "/home/import"
+          log_dir       = ::File.join("#{::Rails.root}", "log")
+          db_conf_file  = ::File.join("#{::Rails.root}", "config", "mongoid.yml")
 
           loop do
             
