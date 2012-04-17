@@ -187,7 +187,7 @@ module AnlasImport
     end # skip_by_name
 
     def clear_name(name)
-      name.sub(/\s{0,}\+\s{0,}подарок\!{1,}\z/i, "")
+      name.sub(/\s{0,}\+\s{0,}подарок\!{0,}\z/i, "")
     end # clear_name
 
     def prefix_file
