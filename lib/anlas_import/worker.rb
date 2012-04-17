@@ -44,7 +44,7 @@ module AnlasImport
       # Блок сохраниения данных в базу
       @saver = lambda { |artikul, artikulprod, name, price, price_wholesale, price_old, in_order|
                         
-        name        = name.strip.escape
+        name        = clear_name(name).strip.escape
         artikul     = artikul.strip.escape
         artikulprod = artikulprod.strip.escape
 
@@ -185,6 +185,10 @@ module AnlasImport
     def skip_by_name(name)
       (name =~ /^я{2,}/u) === 0
     end # skip_by_name
+
+    def clear_name(name)
+      name.sub(/\s{0,}\+\s{0,}подарок\!{1,}\z/i, "")
+    end # clear_name
 
     def prefix_file
       ::File.basename(@file).scan(/^([a-z]+)_/).flatten.first || ""
