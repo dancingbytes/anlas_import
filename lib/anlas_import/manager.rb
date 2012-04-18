@@ -140,20 +140,25 @@ module AnlasImport
 
       files.each do |zip|
 
-        ::Zip::ZipFile.open(zip) { |zip_file|
+        begin
 
-          zip_file.each { |f|
+          ::Zip::ZipFile.open(zip) { |zip_file|
 
-            f_path = ::File.join(@config[:dir], f.name)
-            ::FileUtils.rm_rf f_path if ::File.exist?(f_path)
-            ::FileUtils.mkdir_p(::File.dirname(f_path))
-            zip_file.extract(f, f_path)
-            
-          } # each
+            zip_file.each { |f|
 
-        } # open
+              f_path = ::File.join(@config[:dir], f.name)
+              ::FileUtils.rm_rf f_path if ::File.exist?(f_path)
+              ::FileUtils.mkdir_p(::File.dirname(f_path))
+              zip_file.extract(f, f_path)
+              
+            } # each
 
-        ::FileUtils.rm_rf(zip)
+          } # open
+
+          ::FileUtils.rm_rf(zip)
+
+        rescue
+        end  
 
       end # Dir.glob
 
