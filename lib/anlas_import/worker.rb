@@ -117,7 +117,7 @@ module AnlasImport
     def insert(name, price, price_wholesale, price_old, in_order, artikulprod, artikul, collector_id)
       
       doc = {
-        "name"            => name,
+        "name_1c"         => name,
         "price"           => price,
         "price_wholesale" => price_wholesale,
         "price_old"       => price_old,
@@ -157,7 +157,7 @@ module AnlasImport
       selector = { "marking_of_goods" => artikul }
         
       doc = {
-        "name"            => name,
+        "name_1c"         => name,
         "price"           => price,
         "price_wholesale" => price_wholesale,
         "price_old"       => price_old,
