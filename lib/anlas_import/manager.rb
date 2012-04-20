@@ -26,19 +26,22 @@ module AnlasImport
       if @errors.empty?
 
         start = ::Time.now.to_i
-        @errors << "[#{Time.now.strftime('%H:%M:%S %d-%m-%Y')}] Обработка файлов импорта ============================"
-        
         processing
+        
+        if (@inserted_items.length + @updaed_items.length > 0)
 
-        @errors << "Добавлено товаров: #{@inserted_items.length}"
-        @errors << "Обновлено товаров: #{@updaed_items.length}"
-        @errors << "Затрачено времени: #{ '%0.3f' % (Time.now.to_f - start) } секунд."
-        @errors << "===========================================================================\n"
+          @errors << "[#{Time.now.strftime('%H:%M:%S %d-%m-%Y')}] Обработка файлов импорта ============================"
+          @errors << "Добавлено товаров: #{@inserted_items.length}"
+          @errors << "Обновлено товаров: #{@updaed_items.length}"
+          @errors << "Затрачено времени: #{ '%0.3f' % (Time.now.to_f - start) } секунд."
+          @errors << "===========================================================================\n"
+
+        end # if
 
       end # if
 
       after
-      yield(@inserted_items, @updaed_items ) if block_given? && @has_files
+      yield(@inserted_items, @updaed_items) if @has_files && block_given?
       reset
 
     end # run
