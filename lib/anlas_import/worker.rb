@@ -124,8 +124,6 @@ module AnlasImport
         "marking_of_goods" => artikul,
         "available"       => in_order,
         "marking_of_goods_manufacturer" => artikulprod,
-        "meta_title"      => name,
-        "meta_description" => name,
         "imported_at"     => ::Time.now.utc,
         "created_at"      => ::Time.now.utc
       }
@@ -163,8 +161,6 @@ module AnlasImport
         "price_old"       => price_old,
         "available"       => in_order,
         "marking_of_goods_manufacturer" => artikulprod,
-        "meta_title"      => name,
-        "meta_description" => name,
         "imported_at"     => ::Time.now.utc
       }
       
