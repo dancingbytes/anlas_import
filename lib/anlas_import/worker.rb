@@ -100,7 +100,7 @@ module AnlasImport
         "import_prefix" => (prefix.blank? ? "_" : prefix)
       })
       
-      catalog_import ? catalog_import["_id"] : false
+      catalog_import ? catalog_import : false
       
     end # catalog_for_import
 
@@ -114,7 +114,7 @@ module AnlasImport
 
     end # target_exists
 
-    def insert(name, price, price_wholesale, price_old, in_order, artikulprod, artikul, collector_id)
+    def insert(name, price, price_wholesale, price_old, in_order, artikulprod, artikul, catalog)
       
       doc = {
         "name_1c"         => name,
@@ -125,7 +125,10 @@ module AnlasImport
         "available"       => in_order,
         "marking_of_goods_manufacturer" => artikulprod,
         "imported_at"     => ::Time.now.utc,
-        "created_at"      => ::Time.now.utc
+        "created_at"      => ::Time.now.utc,
+        "catalog_id"      => catalog["_id"],
+        "catalog_lft"     => catalog["lft"],
+        "catalog_rgt"     => catalog["rgt"]
       }
       
       opts = { :safe => true }
