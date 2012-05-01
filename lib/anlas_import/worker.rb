@@ -117,7 +117,12 @@ module AnlasImport
     def insert(name, price, price_wholesale, price_old, in_order, artikulprod, artikul, catalog)
       
       doc = {
+
         "name_1c"         => name,
+        "name"            => name,
+        "meta_title"      => name,
+        "unmanaged"       => true,
+
         "price"           => price,
         "price_wholesale" => price_wholesale,
         "price_old"       => price_old,
@@ -129,6 +134,7 @@ module AnlasImport
         "catalog_id"      => catalog["_id"],
         "catalog_lft"     => catalog["lft"],
         "catalog_rgt"     => catalog["rgt"]
+
       }
       
       opts = { :safe => true }
