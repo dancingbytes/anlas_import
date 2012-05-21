@@ -42,8 +42,8 @@ module AnlasImport
     def init_saver(catalog)
 
       # Блок сохраниения данных в базу
-      @saver = lambda { |artikul, artikulprod, name, price, price_wholesale, price_old, in_order|
-                        
+      @saver = lambda { |artikul, artikulprod, name, price, purchasing_price, price_old, in_order|
+
         name        = clear_name(name).strip.escape
         artikul     = artikul.strip.escape
         artikulprod = artikulprod.strip.escape
@@ -52,17 +52,17 @@ module AnlasImport
         unless skip_by_name(name)
 
           if target_exists(artikul)
-            
-            if update(name, price, price_wholesale, price_old, in_order, artikulprod, artikul)
-              @upd << artikul 
+
+            if update(name, price, purchasing_price, price_old, in_order, artikulprod, artikul)
+              @upd << artikul
             end
 
           else
-            
-            if insert(name, price, price_wholesale, price_old, in_order, artikulprod, artikul, catalog)
-              @ins << artikul 
+
+            if insert(name, price, purchasing_price, price_old, in_order, artikulprod, artikul, catalog)
+              @ins << artikul
             end
-              
+
           end
 
         end # unless
@@ -87,7 +87,7 @@ module AnlasImport
         unless (errors = pt.errors).empty?
           @errors << errors
         end
-        
+
         ::FileUtils.rm_rf(@file)
 
       end # unless
@@ -95,27 +95,27 @@ module AnlasImport
     end # work_with_file
 
     def catalog_for_import(prefix)
-      
+
       catalog_import = @conn.collection("catalogs").find_one({
         "import_prefix" => (prefix.blank? ? "_" : prefix)
       })
-      
+
       catalog_import ? catalog_import : false
-      
+
     end # catalog_for_import
 
     def target_exists(marking_of_goods)
-      
+
       item = @conn.collection("items").find_one({
         "marking_of_goods" => marking_of_goods
       })
-      
+
       item ? item : false
 
     end # target_exists
 
-    def insert(name, price, price_wholesale, price_old, in_order, artikulprod, artikul, catalog)
-      
+    def insert(name, price, purchasing_price, price_old, in_order, artikulprod, artikul, catalog)
+
       doc = {
 
         "name_1c"         => name,
@@ -124,7 +124,8 @@ module AnlasImport
         "unmanaged"       => true,
 
         "price"           => price,
-        "price_wholesale" => price_wholesale,
+        "price_wholesale" => purchasing_price,
+        "purchasing_price"=> purchasing_price,
         "price_old"       => price_old,
         "marking_of_goods" => artikul,
         "available"       => in_order,
@@ -136,11 +137,11 @@ module AnlasImport
         "catalog_rgt"     => catalog["rgt"]
 
       }
-      
+
       opts = { :safe => true }
 
       begin
-        
+
         @conn.collection("admin").update(
           {:name => "Item_counter"}, {"$inc" => {:count => 1}}, {:upsert => true}
         )
@@ -156,23 +157,24 @@ module AnlasImport
         @errors << "[INSERT: #{artikul}] #{e}"
         return false
       end # begin
-      
+
     end # insert
 
-    def update(name, price, price_wholesale, price_old, in_order, artikulprod, artikul)
-      
+    def update(name, price, purchasing_price, price_old, in_order, artikulprod, artikul)
+
       selector = { "marking_of_goods" => artikul }
-        
+
       doc = {
         "name_1c"         => name,
         "price"           => price,
-        "price_wholesale" => price_wholesale,
+        "price_wholesale" => purchasing_price,
+        "purchasing_price"=> purchasing_price,
         "price_old"       => price_old,
         "available"       => in_order,
         "marking_of_goods_manufacturer" => artikulprod,
         "imported_at"     => ::Time.now.utc
       }
-      
+
       opts = { :safe => true }
 
       begin
@@ -184,7 +186,7 @@ module AnlasImport
         @errors << "[UPDATE: #{artikul}] #{e}"
         return false
       end # begin
-      
+
     end # update
 
     def skip_by_name(name)

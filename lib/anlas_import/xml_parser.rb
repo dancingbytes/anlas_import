@@ -15,13 +15,13 @@ module AnlasImport
       #
       @errors = []
       @saver  = saver.respond_to?(:call) ? saver : lambda {}
-      
+
     end # initialize
 
     def start_element(name, attrs = [])
 
       attrs = ::Hash[attrs]
-      
+
       case name
 
         when "price" then tag_price(attrs)
