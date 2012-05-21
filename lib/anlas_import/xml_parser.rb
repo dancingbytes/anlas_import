@@ -7,7 +7,7 @@ module AnlasImport
     def initialize(saver, options = {})
 
       @options = {
-        "price_wholesale" => ["Оптовые"],
+        "price_wholesale" => ["Оптовая", "Оптовые"],
         "price"           => ["Интернет Розничная"],
         "price_bonus_key" => []          # "Бонусная цена"
       }.merge(options)
