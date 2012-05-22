@@ -42,7 +42,7 @@ module AnlasImport
     def init_saver(catalog)
 
       # Блок сохраниения данных в базу
-      @saver = lambda { |artikul, artikulprod, name, price, price_wholesale, price_old, in_order|
+      @saver = lambda { |artikul, artikulprod, name, price, purchasing_price, price_old, in_order|
 
         name        = clear_name(name).strip.escape
         artikul     = artikul.strip.escape
@@ -53,13 +53,13 @@ module AnlasImport
 
           if target_exists(artikul)
 
-            if update(name, price, price_wholesale, price_old, in_order, artikul)
+            if update(name, price, purchasing_price, price_old, in_order, artikul)
               @upd << artikul
             end
 
           else
 
-            if insert(name, price, price_wholesale, price_old, in_order, artikulprod, artikul, catalog)
+            if insert(name, price, purchasing_price, price_old, in_order, artikulprod, artikul, catalog)
               @ins << artikul
             end
 
@@ -114,7 +114,7 @@ module AnlasImport
 
     end # target_exists
 
-    def insert(name, price, price_wholesale, price_old, in_order, artikulprod, artikul, catalog)
+    def insert(name, price, purchasing_price, price_old, in_order, artikulprod, artikul, catalog)
 
       doc = {
 
@@ -124,7 +124,8 @@ module AnlasImport
         "unmanaged"       => true,
 
         "price"           => price,
-        "price_wholesale" => price_wholesale,
+        "price_wholesale" => purchasing_price,
+        "purchasing_price"=> purchasing_price,
         "price_old"       => price_old,
         "marking_of_goods" => artikul,
         "available"       => in_order,
@@ -159,14 +160,15 @@ module AnlasImport
 
     end # insert
 
-    def update(name, price, price_wholesale, price_old, in_order, artikul)
+    def update(name, price, purchasing_price, price_old, in_order, artikul)
 
       selector = { "marking_of_goods" => artikul }
 
       doc = {
         "name_1c"         => name,
         "price"           => price,
-        "price_wholesale" => price_wholesale,
+        "price_wholesale" => purchasing_price,
+        "purchasing_price"=> purchasing_price,
         "price_old"       => price_old,
         "available"       => in_order,
         "imported_at"     => ::Time.now.utc

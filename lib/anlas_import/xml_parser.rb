@@ -7,7 +7,7 @@ module AnlasImport
     def initialize(saver, options = {})
 
       @options = {
-        "price_wholesale" => ["Оптовые"],
+        "price_wholesale" => ["Оптовая", "Оптовые"],
         "price"           => ["Интернет Розничная"],
         "price_bonus_key" => []          # "Бонусная цена"
       }.merge(options)
@@ -15,13 +15,13 @@ module AnlasImport
       #
       @errors = []
       @saver  = saver.respond_to?(:call) ? saver : lambda {}
-      
+
     end # initialize
 
     def start_element(name, attrs = [])
 
       attrs = ::Hash[attrs]
-      
+
       case name
 
         when "price" then tag_price(attrs)
