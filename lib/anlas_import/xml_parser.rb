@@ -7,9 +7,7 @@ module AnlasImport
     def initialize(saver, options = {})
 
       @options = {
-        "price_wholesale" => ["Оптовая", "Оптовые"],
-        "price"           => ["Интернет Розничная"],
-        "price_bonus_key" => []          # "Бонусная цена"
+        "purchasing_price" => ["Оптовая", "Оптовые"]
       }.merge(options)
 
       #
@@ -48,70 +46,55 @@ module AnlasImport
     def tag_price(attrs)
 
       name = attrs["name"]
-
-      @price_key = attrs["id"]            if @options["price"].include?(name)
-      @price_wholesale_key = attrs["id"]  if @options["price_wholesale"].include?(name)
-      @price_bonus_key = attrs["id"]      if @options["price_bonus_key"].include?(name)
+      @purchasing_price_key = attrs["id"]  if @options["purchasing_price"].include?(name)
 
     end # tag_price
 
     def tag_nom(attrs)
 
       return if attrs["isGroupe"].nil? || attrs["isGroupe"].to_i != 0
-      return unless validate_price_key(attrs)
-
-      price       = (attrs[price_bonus_key] && attrs[price_bonus_key].to_i > 0 ? attrs[price_bonus_key] : attrs[price_key]).to_i
-      price_old   = (attrs[price_bonus_key] && attrs[price_bonus_key].to_i > 0 ? attrs[price_key] : 0).to_i
-      price_wholesale = (attrs[price_wholesale_key] || 0).to_i
-      in_order    = (attrs["store"] && attrs["store"].to_i == 1 ? 1 : 0)
+      return unless validate_purchasing_price_key(attrs)
 
       @saver.call(
 
-        # artikul (s)
+        # marking_of_goods (s)
         attrs["artikul"],
 
-        # artikulprod (s)
+        # marking_of_goods_manufacturer (s)
         attrs["artikulprod"] || "",
 
         # name (s)
         attrs["name"],
 
-        # price (i)
-        price,
+        # purchasing_price (i)
+        attrs[purchasing_price_key],
 
-        # price_wholesale (i)
-        price_wholesale,
+        # available (i)
+        attrs["ostatok"] || 0,
 
-        # price_old (i)
-        price_old,
+        # gtd_number (s),
+        attrs["number_GTD"] || "",
 
-        # in_order (i)
-        in_order
+        # storehouse (s)
+        attrs["sklad"] || ""
+
       )
 
     end # tag_nom
 
-    def price_bonus_key
-      "price#{@price_bonus_key}"
-    end # price_bonus_key
+    def purchasing_price_key
+      "price#{@purchasing_price_key}"
+    end # purchasing_price_key
 
-    def price_key
-      "price#{@price_key}"
-    end # price_key
+    def validate_purchasing_price_key(attrs)
 
-    def price_wholesale_key
-      "price#{@price_wholesale_key}"
-    end # price_wholesale_key
-
-    def validate_price_key(attrs)
-
-      if attrs[price_key].nil? || attrs[price_key].empty?
-        @errors << "[Errors] Не найдена розничная цена у товара: #{attrs['artikul']}"
+      if attrs[purchasing_price_key].nil? || attrs[purchasing_price_key].empty?
+        @errors << "[Errors] Не найдена закупочная цена у товара: #{attrs['artikul']}"
         return false
       end
       true
 
-    end # validate_price_key
+    end # validate_purchasing_price_key
 
   end # XmlParser
 

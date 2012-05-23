@@ -42,7 +42,7 @@ module AnlasImport
     def init_saver(catalog)
 
       # Блок сохраниения данных в базу
-      @saver = lambda { |artikul, artikulprod, name, price, purchasing_price, price_old, in_order|
+      @saver = lambda { |artikul, artikulprod, name, purchasing_price, available, gtd_number, storehouse|
 
         name        = clear_name(name).strip.escape
         artikul     = artikul.strip.escape
@@ -53,13 +53,13 @@ module AnlasImport
 
           if target_exists(artikul)
 
-            if update(name, price, purchasing_price, price_old, in_order, artikul)
+            if update(artikul, name, purchasing_price, available)
               @upd << artikul
             end
 
           else
 
-            if insert(name, price, purchasing_price, price_old, in_order, artikulprod, artikul, catalog)
+            if insert(artikul, artikulprod, name, purchasing_price, available, gtd_number, storehouse, catalog)
               @ins << artikul
             end
 
@@ -114,7 +114,7 @@ module AnlasImport
 
     end # target_exists
 
-    def insert(name, price, purchasing_price, price_old, in_order, artikulprod, artikul, catalog)
+    def insert(artikul, artikulprod, name, purchasing_price, available, gtd_number, storehouse, catalog)
 
       doc = {
 
@@ -123,15 +123,18 @@ module AnlasImport
         "meta_title"      => name,
         "unmanaged"       => true,
 
-        "price"           => price,
-        "price_wholesale" => purchasing_price,
-        "purchasing_price"=> purchasing_price,
-        "price_old"       => price_old,
+        "purchasing_price"=> purchasing_price.to_i,
+
+        "storehouse"      => storehouse,
+        "gtd_number"      => gtd_number,
+
         "marking_of_goods" => artikul,
-        "available"       => in_order,
+        "available"       => available.to_i,
         "marking_of_goods_manufacturer" => artikulprod,
+
         "imported_at"     => ::Time.now.utc,
         "created_at"      => ::Time.now.utc,
+
         "catalog_id"      => catalog["_id"],
         "catalog_lft"     => catalog["lft"],
         "catalog_rgt"     => catalog["rgt"]
@@ -160,18 +163,15 @@ module AnlasImport
 
     end # insert
 
-    def update(name, price, purchasing_price, price_old, in_order, artikul)
+    def update(artikul, name, purchasing_price, available)
 
       selector = { "marking_of_goods" => artikul }
 
       doc = {
-        "name_1c"         => name,
-        "price"           => price,
-        "price_wholesale" => purchasing_price,
-        "purchasing_price"=> purchasing_price,
-        "price_old"       => price_old,
-        "available"       => in_order,
-        "imported_at"     => ::Time.now.utc
+        "name_1c"           => name,
+        "purchasing_price"  => purchasing_price.to_i,
+        "available"         => available.to_i,
+        "imported_at"       => ::Time.now.utc
       }
 
       opts = { :safe => true }
