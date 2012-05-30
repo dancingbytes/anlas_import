@@ -1,6 +1,8 @@
 # encoding: UTF-8
 module AnlasImport
 
+  BACKUP_DIR = "/home/webmaster/backups/imports/"
+
   # Сохранение данных (добавление новых, обновление сущестующих), полученных
   # при разборе xml-файла.
   class Worker
@@ -9,6 +11,8 @@ module AnlasImport
 
       @errors, @ins, @upd = [], [], []
       @file, @conn = file, conn
+
+      @file_name = ::File.basename(@file)
 
       unless @file && ::FileTest.exists?(@file)
         @errors << "Файл не найден: #{@file}"
@@ -88,7 +92,12 @@ module AnlasImport
           @errors << errors
         end
 
-        ::FileUtils.rm_rf(@file)
+        begin
+          ::FileUtils.mv(@file, AnlasImport::BACKUP_DIR)
+        rescue SystemCallError
+          puts "Не могу переместить файл `#{@file_name}` в `#{AnlasImport::BACKUP_DIR}`"
+          ::FileUtils.rm_rf(@file)
+        end
 
       end # unless
 
@@ -197,7 +206,7 @@ module AnlasImport
     end # clear_name
 
     def prefix_file
-      ::File.basename(@file).scan(/^([a-z]+)_/).flatten.first || ""
+      @file_name.scan(/^([a-z]+)_/).flatten.first || ""
     end # prefix_file
 
   end # Worker
