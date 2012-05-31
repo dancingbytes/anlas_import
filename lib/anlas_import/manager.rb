@@ -74,6 +74,8 @@ module AnlasImport
 
     def after
 
+      #Item.where(:marking_of_goods.in => @inserted_items).map(&:init_features)
+
       self.log(@errors.flatten.join("\n")) unless @errors.empty?
       close_logger
       close_db_connect
@@ -85,16 +87,16 @@ module AnlasImport
       files = ::Dir.glob( ::File.join(@config[:dir], "**", "*.xml") )
       return unless files && files.size > 0
 
-      @has_files = true      
+      @has_files = true
 
       files.each do |xml_file|
-        
+
         worker = ::AnlasImport::Worker.new(xml_file, @conn).parse
 
         @errors << worker.errors
         @inserted_items = @inserted_items.concat(worker.inserted)
         @updaed_items   = @updaed_items.concat(worker.updated)
-        
+
       end # each
 
       @inserted_items.uniq!

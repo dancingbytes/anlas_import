@@ -7,6 +7,17 @@ module AnlasImport
   # при разборе xml-файла.
   class Worker
 
+    MOG_EQ = {
+      'g' => 'a',
+      'v' => 'v',
+      'h' => 'h',
+      'a' => '',
+      'e' => 'e',
+      't' => 't',
+      'z' => 'z',
+      'i' => 'i'
+    }
+
     def initialize(file, conn)
 
       @errors, @ins, @upd = [], [], []
@@ -55,16 +66,28 @@ module AnlasImport
         # Проверка товара на наличие букв "яя" вначле названия (такие товары не выгружаем)
         unless skip_by_name(name)
 
-          if target_exists(artikul)
+          orig_artikul = artikul
+          finded = target_exists(orig_artikul)
 
-            if update(name, price, purchasing_price, price_old, in_order, artikul)
-              @upd << artikul
+          #unless finded
+            #postfix = artikul[/[gvhaetzi]$/]
+            #if postfix
+              #artikul = orig_artikul.sub(/[gvhaetzi]$/, '')
+              #artikul = MOG_EQ[postfix] + artikul
+              #finded  = target_exists(artikul)
+            #end # if
+          #end # unless
+
+          if finded
+
+            if update(name, price, purchasing_price, price_old, in_order, orig_artikul, artikul)
+              @upd << orig_artikul
             end
 
           else
 
-            if insert(name, price, purchasing_price, price_old, in_order, artikulprod, artikul, catalog)
-              @ins << artikul
+            if insert(name, price, purchasing_price, price_old, in_order, artikulprod, orig_artikul, catalog)
+              @ins << orig_artikul
             end
 
           end
@@ -144,7 +167,6 @@ module AnlasImport
         "catalog_id"      => catalog["_id"],
         "catalog_lft"     => catalog["lft"],
         "catalog_rgt"     => catalog["rgt"]
-
       }
 
       opts = { :safe => true }
@@ -169,7 +191,7 @@ module AnlasImport
 
     end # insert
 
-    def update(name, price, purchasing_price, price_old, in_order, artikul)
+    def update(name, price, purchasing_price, price_old, in_order, artikul, new_artikul = nil)
 
       selector = { "marking_of_goods" => artikul }
 
@@ -180,7 +202,8 @@ module AnlasImport
         "purchasing_price"=> purchasing_price,
         "price_old"       => price_old,
         "available"       => in_order,
-        "imported_at"     => ::Time.now.utc
+        "imported_at"     => ::Time.now.utc,
+        "marking_of_goods"=> new_artikul || artikul
       }
 
       opts = { :safe => true }
