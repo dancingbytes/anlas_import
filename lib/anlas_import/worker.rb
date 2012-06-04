@@ -39,7 +39,7 @@ module AnlasImport
 
     private
 
-    def init_saver#(catalog)
+    def init_saver
 
       # Блок сохраниения данных в базу
       @saver = lambda { |artikul, artikulprod, name, price, purchasing_price, price_old, available, gtd_number, storehouse|
