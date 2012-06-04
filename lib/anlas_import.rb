@@ -1,23 +1,21 @@
 # encoding: utf-8
 module AnlasImport
 
-  extend self
-
-  def can_start?
-
-    return false if defined?(::IRB)
-    return false if defined?(::Rake)
-    return false unless defined?(::Rails)
-    return false if ::Rails.env.to_s != "production"
-    true
-
-  end # can_start?
-
   class Base
 
     def self.run
       puts "This method must be redefined"
     end # self.run
+
+    def self.can_start?
+
+      return false if defined?(::IRB)
+      return false if defined?(::Rake)
+      return false unless defined?(::Rails)
+      return false if ::Rails.env.to_s != "production"
+      true
+
+    end # self.can_start?
 
   end # Base
 

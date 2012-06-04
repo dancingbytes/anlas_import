@@ -7,7 +7,7 @@ module AnlasImport
 
     initializer 'anlas_import' do |app|
 
-      ::AnlasImport::Base.run if ::AnlasImport.can_start?
+      ::AnlasImport::Base.run if ::AnlasImport::Base.can_start?
 
     end # initializer
 
