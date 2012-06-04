@@ -1,7 +1,22 @@
 # encoding: utf-8
 module AnlasImport
 
+  TABLE_MATCHES = {
+
+    # (postfix) => (prefix)
+    'a' => '',   # Аксессуары
+    'g' => 'a',  # Аккумуляторы
+    'h' => 'h',  # Химия
+    'e' => 'e',  # Электроника
+    't' => 't'   # Инструменты
+
+  }
+
   class Base
+
+    def self.backup_dir
+      "/home/webmaster/backups/imports/"
+    end # backup_dir
 
     def self.run
       puts "This method must be redefined"

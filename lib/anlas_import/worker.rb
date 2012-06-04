@@ -1,19 +1,6 @@
 # encoding: UTF-8
 module AnlasImport
 
-  BACKUP_DIR = "/home/webmaster/backups/imports/"
-
-  TABLE_MATCHES = {
-
-    # (postfix) => (prefix)
-    'a' => '',  # Аксессуары
-    'g' => 'a',  # Аккумуляторы
-    'h' => 'h',  # Химия
-    'e' => 'e',  # Электроника
-    't' => 't'   # Инструменты
-
-  }
-
   # Сохранение данных (добавление новых, обновление сущестующих), полученных
   # при разборе xml-файла.
   class Worker
@@ -105,9 +92,9 @@ module AnlasImport
       end
 
       begin
-        ::FileUtils.mv(@file, AnlasImport::BACKUP_DIR)
+        ::FileUtils.mv(@file, ::AnlasImport::Base.backup_dir)
       rescue SystemCallError
-        puts "Не могу переместить файл `#{@file_name}` в `#{AnlasImport::BACKUP_DIR}`"
+        puts "Не могу переместить файл `#{@file_name}` в `#{::AnlasImport::Base.backup_dir}`"
         ::FileUtils.rm_rf(@file)
       end
 
@@ -130,7 +117,7 @@ module AnlasImport
       item = ::Item.where(:marking_of_goods => marking_of_goods).first
       return item if item
 
-      marking_of_goods_old = TABLE_MATCHES[postfix] + marking_of_goods[0, marking_of_goods.length-1]
+      marking_of_goods_old = ::AnlasImport::TABLE_MATCHES[postfix] + marking_of_goods[0, marking_of_goods.length-1]
       ::Item.where(:marking_of_goods_old => marking_of_goods_old).first
 
     end # find_item
