@@ -1,21 +1,25 @@
 # encoding: utf-8
 module AnlasImport
 
-  PROC_NAME = "anlas_import_xml"
+  extend self
 
-  class << self
+  def can_start?
 
-    def can_start?
+    return false if defined?(::IRB)
+    return false if defined?(::Rake)
+    return false unless defined?(::Rails)
+    return false if ::Rails.env.to_s != "production"
+    true
 
-      return false if defined?(::IRB)
-      return false if defined?(::Rake)
-      return false unless defined?(::Rails)
-      return false if ::Rails.env.to_s != "production"
-      true
+  end # can_start?
 
-    end # can_start?
+  class Base
 
-  end # class << self
+    def self.run
+      puts "This method must be redefined"
+    end # self.run
+
+  end # Base
 
 end # AnlasImport
 

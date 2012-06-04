@@ -63,7 +63,8 @@ module AnlasImport
       price       = (attrs[price_bonus_key] && attrs[price_bonus_key].to_i > 0 ? attrs[price_bonus_key] : attrs[price_key]).to_i
       price_old   = (attrs[price_bonus_key] && attrs[price_bonus_key].to_i > 0 ? attrs[price_key] : 0).to_i
       price_wholesale = (attrs[price_wholesale_key] || 0).to_i
-      in_order    = (attrs["store"] && attrs["store"].to_i == 1 ? 1 : 0)
+
+      available   = attrs["ostatok"] ? attrs["ostatok"].to_i : 0
 
       @saver.call(
 
@@ -85,8 +86,15 @@ module AnlasImport
         # price_old (i)
         price_old,
 
-        # in_order (i)
-        in_order
+        # available (i)
+        available,
+
+        # number_GTD
+        (attrs["number_GTD"] || "").gsub(/\-/, ""),
+
+        # sklad
+        attrs["sklad"] || ""
+
       )
 
     end # tag_nom

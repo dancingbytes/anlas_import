@@ -3,21 +3,30 @@ module AnlasImport
 
   BACKUP_DIR = "/home/webmaster/backups/imports/"
 
+  TABLE_MATCHES = {
+
+    # (postfix) => (prefix)
+    'a' => '',  # Аксессуары
+    'g' => 'a',  # Аккумуляторы
+    'h' => 'h',  # Химия
+    'e' => 'e',  # Электроника
+    't' => 't'   # Инструменты
+
+  }
+
   # Сохранение данных (добавление новых, обновление сущестующих), полученных
   # при разборе xml-файла.
   class Worker
 
-    def initialize(file, conn)
+    def initialize(file)
 
-      @errors, @ins, @upd = [], [], []
-      @file, @conn = file, conn
+      @catalogs = {}
 
+      @errors, @ins, @upd, @file = [], [], [], file
       @file_name = ::File.basename(@file)
 
       unless @file && ::FileTest.exists?(@file)
         @errors << "Файл не найден: #{@file}"
-      else
-        @errors << "Не могу соединиться с базой данных!" unless @conn
       end # unless
 
     end # new
@@ -43,31 +52,38 @@ module AnlasImport
 
     private
 
-    def init_saver(catalog)
+    def init_saver#(catalog)
 
       # Блок сохраниения данных в базу
-      @saver = lambda { |artikul, artikulprod, name, price, purchasing_price, price_old, in_order|
+      @saver = lambda { |artikul, artikulprod, name, price, purchasing_price, price_old, available, gtd_number, storehouse|
 
         name        = clear_name(name).strip.escape
         artikul     = artikul.strip.escape
         artikulprod = artikulprod.strip.escape
+        postfix     = artikul[-1] || ""
 
         # Проверка товара на наличие букв "яя" вначле названия (такие товары не выгружаем)
         unless skip_by_name(name)
 
-          if target_exists(artikul)
+          if item = find_item(artikul, postfix)
 
-            if update(name, price, purchasing_price, price_old, in_order, artikul)
+            if update(item, artikul, artikulprod, name, price, purchasing_price, price_old, available, gtd_number, storehouse)
               @upd << artikul
             end
 
           else
 
-            if insert(name, price, purchasing_price, price_old, in_order, artikulprod, artikul, catalog)
-              @ins << artikul
-            end
+            if catalog = catalog_for_import(postfix)
 
-          end
+              if insert(catalog, artikul, artikulprod, name, price, purchasing_price, price_old, available, gtd_number, storehouse)
+                @ins << artikul
+              end
+
+            else
+              @errors << "Каталог выгрузки не найден! Товар: #{artikul} -> #{name}"
+            end # if
+
+          end # if
 
         end # unless
 
@@ -77,123 +93,104 @@ module AnlasImport
 
     def work_with_file
 
-      unless (catalog = catalog_for_import( prefix_file ))
-       @errors << "Каталог выгрузки не найден! Файл: #{@file}"
-      else
+      init_saver
 
-        init_saver(catalog)
+      pt = ::AnlasImport::XmlParser.new(@saver)
 
-        pt = ::AnlasImport::XmlParser.new(@saver)
+      parser = ::Nokogiri::XML::SAX::Parser.new(pt)
+      parser.parse_file(@file)
 
-        parser = ::Nokogiri::XML::SAX::Parser.new(pt)
-        parser.parse_file(@file)
+      unless (errors = pt.errors).empty?
+        @errors << errors
+      end
 
-        unless (errors = pt.errors).empty?
-          @errors << errors
-        end
-
-        begin
-          ::FileUtils.mv(@file, AnlasImport::BACKUP_DIR)
-        rescue SystemCallError
-          puts "Не могу переместить файл `#{@file_name}` в `#{AnlasImport::BACKUP_DIR}`"
-          ::FileUtils.rm_rf(@file)
-        end
-
-      end # unless
+      begin
+        ::FileUtils.mv(@file, AnlasImport::BACKUP_DIR)
+      rescue SystemCallError
+        puts "Не могу переместить файл `#{@file_name}` в `#{AnlasImport::BACKUP_DIR}`"
+        ::FileUtils.rm_rf(@file)
+      end
 
     end # work_with_file
 
-    def catalog_for_import(prefix)
+    def catalog_for_import(postfix)
 
-      catalog_import = @conn.collection("catalogs").find_one({
-        "import_prefix" => (prefix.blank? ? "_" : prefix)
-      })
+      catalog = @catalogs[postfix]
+      return if catalog
 
-      catalog_import ? catalog_import : false
+      catalog = ::Catalog.where(:import => postfix).first
+      @catalogs[postfix] = catalog if catalog
+
+      catalog
 
     end # catalog_for_import
 
-    def target_exists(marking_of_goods)
+    def find_item(marking_of_goods, postfix)
 
-      item = @conn.collection("items").find_one({
-        "marking_of_goods" => marking_of_goods
-      })
+      item = ::Item.where(:marking_of_goods => marking_of_goods).first
+      return item if item
 
-      item ? item : false
+      marking_of_goods_old = TABLE_MATCHES[postfix] + marking_of_goods[0, marking_of_goods.length-1]
+      ::Item.where(:marking_of_goods_old => marking_of_goods_old).first
 
-    end # target_exists
+    end # find_item
 
-    def insert(name, price, purchasing_price, price_old, in_order, artikulprod, artikul, catalog)
+    def insert(catalog, artikul, artikulprod, name, price, purchasing_price, price_old, available, gtd_number, storehouse)
 
-      doc = {
+      item = ::Item.new
 
-        "name_1c"         => name,
-        "name"            => name,
-        "meta_title"      => name,
-        "unmanaged"       => true,
+      item.marking_of_goods = artikul
+      itemmarking_of_goods_manufacturer = artikulprod
 
-        "price"           => price,
-        "price_wholesale" => purchasing_price,
-        "purchasing_price"=> purchasing_price,
-        "price_old"       => price_old,
-        "marking_of_goods" => artikul,
-        "available"       => in_order,
-        "marking_of_goods_manufacturer" => artikulprod,
-        "imported_at"     => ::Time.now.utc,
-        "created_at"      => ::Time.now.utc,
-        "catalog_id"      => catalog["_id"],
-        "catalog_lft"     => catalog["lft"],
-        "catalog_rgt"     => catalog["rgt"]
+      item.catalog_id = catalog.id
+      item.name_1c    = name
+      item.name       = name
+      item.meta_title = name
+      item.unmanaged  = true
 
-      }
+      item.price      = price
+      item.price_wholesale  = purchasing_price
+      item.purchasing_price = purchasing_price
+      item.price_old  = price_old
 
-      opts = { :safe => true }
+      item.available  = available
+      item.gtd_number = gtd_number
+      item.storehouse = storehouse
 
-      begin
+      item.imported_at  = ::Time.now.utc
 
-        @conn.collection("admin").update(
-          {:name => "Item_counter"}, {"$inc" => {:count => 1}}, {:upsert => true}
-        )
-
-        counter = @conn.collection("admin").find_one(:name => "Item_counter")
-        doc["uri"] = (counter ? counter["count"] : 0)
-
-        @conn.collection("items").insert(doc, opts)
-
-        return true
-
-      rescue => e
-        @errors << "[INSERT: #{artikul}] #{e}"
+      unless item.save(validate: false)
+        @errors << "[INSERT: #{artikul}] #{item.errors.inspect}"
         return false
-      end # begin
+      end
+
+      true
 
     end # insert
 
-    def update(name, price, purchasing_price, price_old, in_order, artikul)
+    def update(item, artikul, artikulprod, name, price, purchasing_price, price_old, available, gtd_number, storehouse)
 
-      selector = { "marking_of_goods" => artikul }
+      item.artikul      = artikul
+      item.artikulprod  = artikulprod
+      item.name_1c      = name
 
-      doc = {
-        "name_1c"         => name,
-        "price"           => price,
-        "price_wholesale" => purchasing_price,
-        "purchasing_price"=> purchasing_price,
-        "price_old"       => price_old,
-        "available"       => in_order,
-        "imported_at"     => ::Time.now.utc
-      }
+      item.price        = price
+      item.price_wholesale  = purchasing_price
+      item.purchasing_price = purchasing_price
+      item.price_old    = price_old
 
-      opts = { :safe => true }
+      item.available    = available
+      item.gtd_number   = gtd_number
+      item.storehouse   = storehouse
 
-      begin
+      item.imported_at  = ::Time.now.utc
 
-        @conn.collection("items").update(selector, { "$set" => doc }, opts)
-        return true
-
-      rescue => e
-        @errors << "[UPDATE: #{artikul}] #{e}"
+      unless item.save(validate: false)
+        @errors << "[UPDATE: #{artikul}] #{item.errors.inspect}"
         return false
-      end # begin
+      end
+
+      true
 
     end # update
 

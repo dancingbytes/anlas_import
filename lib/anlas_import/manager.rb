@@ -1,33 +1,31 @@
 # encoding: UTF-8
 module AnlasImport
 
-  # Предварительная обработка выгрузки (распаковка архивов). Проверка
-  # соедиения с базой данных. Запуск обработчика. Отправка отчетов.
+  # Предварительная обработка выгрузки (распаковка архивов).
+  # Запуск обработчика. Отправка отчетов.
   class Manager
-    
-    def initialize(import_dir, log_dir, db_conf_file)
+
+    def initialize(import_dir, log_dir)
 
       @config = {
         :dir => import_dir,
-        :log => log_dir,
-        :db_conf  => db_conf_file
+        :log => log_dir
       }
 
       reset
       check_import_dir
-      read_db_config
 
     end # new
 
     def run
 
       before
-      
+
       if @errors.empty?
 
         start = ::Time.now.to_i
         processing
-        
+
         if (@inserted_items.length + @updaed_items.length > 0)
 
           @errors << "[#{Time.now.strftime('%H:%M:%S %d-%m-%Y')}] Обработка файлов импорта ============================"
@@ -66,17 +64,13 @@ module AnlasImport
     end # reset
 
     def before
-
-      open_db_connection
       extract_zip_files
-
     end # before_start
 
     def after
 
       self.log(@errors.flatten.join("\n")) unless @errors.empty?
       close_logger
-      close_db_connect
 
     end # after
 
@@ -85,16 +79,16 @@ module AnlasImport
       files = ::Dir.glob( ::File.join(@config[:dir], "**", "*.xml") )
       return unless files && files.size > 0
 
-      @has_files = true      
+      @has_files = true
 
       files.each do |xml_file|
-        
-        worker = ::AnlasImport::Worker.new(xml_file, @conn).parse
+
+        worker = ::AnlasImport::Worker.new(xml_file).parse
 
         @errors << worker.errors
         @inserted_items = @inserted_items.concat(worker.inserted)
         @updaed_items   = @updaed_items.concat(worker.updated)
-        
+
       end # each
 
       @inserted_items.uniq!
@@ -111,29 +105,6 @@ module AnlasImport
       end
 
     end # check_import_dir
-
-    def read_db_config
-
-      begin
-        @config[:db_conf] = ::YAML::load_file(@config[:db_conf])["production"]
-      rescue => e
-        @errors << "#{e}"
-      end
-
-      @errors << "Не найден раздел :production в файле конфигурации database.yml " if @config[:db_conf].nil?
-
-    end # read_db_config
-
-    def open_db_connection
-
-      begin
-        ::Mongoid.database.collection("admin").find_one
-        @conn ||= ::Mongoid.database
-      rescue => e
-        @errors << "Нет соединения с базой данных."
-      end # begin
-      
-    end # open_db_connection
 
     def extract_zip_files
 
@@ -153,7 +124,7 @@ module AnlasImport
               ::FileUtils.rm_rf f_path if ::File.exist?(f_path)
               ::FileUtils.mkdir_p(::File.dirname(f_path))
               zip_file.extract(f, f_path)
-              
+
             } # each
 
           } # open
@@ -161,7 +132,7 @@ module AnlasImport
           ::FileUtils.rm_rf(zip)
 
         rescue
-        end  
+        end
 
       end # Dir.glob
 
@@ -188,10 +159,6 @@ module AnlasImport
       @logger = nil
 
     end # close_logger
-
-    def close_db_connect
-      # no need for mongoid
-    end # close_db_connect
 
   end # Manager
 
