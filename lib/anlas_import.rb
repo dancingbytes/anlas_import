@@ -40,3 +40,5 @@ require 'anlas_import/mailer'
 require 'anlas_import/xml_parser'
 require 'anlas_import/worker'
 require 'anlas_import/manager'
+
+require 'anlas_import/railtie' if defined?(::Rails)

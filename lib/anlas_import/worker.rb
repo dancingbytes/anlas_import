@@ -67,7 +67,7 @@ module AnlasImport
               end
 
             else
-              @errors << "Каталог выгрузки не найден! Товар: #{artikul} -> #{name}"
+              @errors << "[Errors] Каталог выгрузки не найден. Товар: #{artikul} -> #{name} (postfix: #{postfix})"
             end # if
 
           end # if
@@ -102,11 +102,12 @@ module AnlasImport
 
     def catalog_for_import(postfix)
 
-      catalog = @catalogs[postfix]
-      return if catalog
+      unless (catalog = @catalogs[postfix])
 
-      catalog = ::Catalog.where(:import => postfix).first
-      @catalogs[postfix] = catalog if catalog
+        catalog = ::Catalog.safely.where(:import => postfix).first
+        @catalogs[postfix] = catalog if catalog
+
+      end # unless
 
       catalog
 
@@ -127,7 +128,7 @@ module AnlasImport
       item = ::Item.new
 
       item.marking_of_goods = artikul
-      itemmarking_of_goods_manufacturer = artikulprod
+      item.marking_of_goods_manufacturer = artikulprod
 
       item.catalog_id = catalog.id
       item.name_1c    = name
@@ -157,8 +158,9 @@ module AnlasImport
 
     def update(item, artikul, artikulprod, name, price, purchasing_price, price_old, available, gtd_number, storehouse)
 
-      item.artikul      = artikul
-      item.artikulprod  = artikulprod
+      item.marking_of_goods      = artikul
+      item.marking_of_goods_manufacturer  = artikulprod
+
       item.name_1c      = name
 
       item.price        = price
@@ -186,7 +188,19 @@ module AnlasImport
     end # skip_by_name
 
     def clear_name(name)
-      name.sub(/\s{0,}\+\s{0,}подарок\!{0,}\z/i, "")
+
+      name
+        .sub(/\A\s+/, "")
+        .gsub(/\!{0,}\z/i, "")
+        .gsub(/акция/i, "")
+        .gsub(/подарок/i, "")
+        .gsub(/не заказывать/i, "")
+        .gsub(/снижена цена/i, "")
+        .gsub(/\(\)/, "")
+        .gsub(/\s{0,}\+\s{0,}\z/, "")
+        .gsub(/(\s){2,}/, '\\1')
+        .sub(/\s+\z/, "")
+
     end # clear_name
 
     def prefix_file
