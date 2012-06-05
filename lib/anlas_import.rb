@@ -19,7 +19,7 @@ module AnlasImport
     end # backup_dir
 
     def self.run
-      puts "This method must be redefined"
+      puts "[AnlasImport::Base] Method `run` must be overwrited."
     end # self.run
 
   end # Base
