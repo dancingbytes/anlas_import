@@ -118,7 +118,8 @@ module AnlasImport
       item = ::Item.where(:marking_of_goods => marking_of_goods).first
       return item if item
 
-      marking_of_goods_old = ::AnlasImport::TABLE_MATCHES[postfix] + marking_of_goods[0, marking_of_goods.length-1]
+      marking_of_goods_old = ::AnlasImport::TABLE_MATCHES[postfix] || ""
+      marking_of_goods_old += marking_of_goods[0, marking_of_goods.length-1]
       ::Item.where(:marking_of_goods_old => marking_of_goods_old).first
 
     end # find_item
