@@ -1,34 +1,19 @@
 # encoding: UTF-8
 module AnlasImport
 
-  BACKUP_DIR = "/home/webmaster/backups/imports/"
-
   # Сохранение данных (добавление новых, обновление сущестующих), полученных
   # при разборе xml-файла.
   class Worker
 
-    MOG_EQ = {
-      'g' => 'a',
-      'v' => 'v',
-      'h' => 'h',
-      'a' => '',
-      'e' => 'e',
-      't' => 't',
-      'z' => 'z',
-      'i' => 'i'
-    }
+    def initialize(file)
 
-    def initialize(file, conn)
+      @catalogs = {}
 
-      @errors, @ins, @upd = [], [], []
-      @file, @conn = file, conn
-
+      @errors, @ins, @upd, @file = [], [], [], file
       @file_name = ::File.basename(@file)
 
       unless @file && ::FileTest.exists?(@file)
         @errors << "Файл не найден: #{@file}"
-      else
-        @errors << "Не могу соединиться с базой данных!" unless @conn
       end # unless
 
     end # new
@@ -54,7 +39,7 @@ module AnlasImport
 
     private
 
-    def init_saver(catalog)
+    def init_saver
 
       # Блок сохраниения данных в базу
       @saver = lambda { |artikul, artikulprod, name, purchasing_price, available, gtd_number, storehouse|
@@ -62,35 +47,30 @@ module AnlasImport
         name        = clear_name(name).strip.escape
         artikul     = artikul.strip.escape
         artikulprod = artikulprod.strip.escape
+        postfix     = artikul[-1] || ""
 
         # Проверка товара на наличие букв "яя" вначле названия (такие товары не выгружаем)
         unless skip_by_name(name)
 
-          orig_artikul = artikul
-          finded = target_exists(orig_artikul)
+          if (item = find_item(artikul))
 
-          #unless finded
-            #postfix = artikul[/[gvhaetzi]$/]
-            #if postfix
-              #artikul = orig_artikul.sub(/[gvhaetzi]$/, '')
-              #artikul = MOG_EQ[postfix] + artikul
-              #finded  = target_exists(artikul)
-            #end # if
-          #end # unless
-
-          if finded
-
-            if update(artikul, name, purchasing_price, available)
+            if update(item, name, purchasing_price, available, gtd_number, storehouse)
               @upd << artikul
             end
 
           else
 
-            if insert(artikul, artikulprod, name, purchasing_price, available, gtd_number, storehouse, catalog)
-              @ins << artikul
+            if (catalog = catalog_for_import(postfix))
+
+              if insert(catalog, artikul, artikulprod, name, purchasing_price, available, gtd_number, storehouse)
+                @ins << artikul
+              end
+
+            else
+              @errors << "[Errors] Каталог выгрузки не найден. Товар: #{artikul} -> #{name} (postfix: #{postfix})"
             end
 
-          end
+          end # if
 
         end # unless
 
@@ -100,131 +80,113 @@ module AnlasImport
 
     def work_with_file
 
-      unless (catalog = catalog_for_import( prefix_file ))
-       @errors << "Каталог выгрузки не найден! Файл: #{@file}"
-      else
+      init_saver
 
-        init_saver(catalog)
+      pt = ::AnlasImport::XmlParser.new(@saver)
 
-        pt = ::AnlasImport::XmlParser.new(@saver)
+      parser = ::Nokogiri::XML::SAX::Parser.new(pt)
+      parser.parse_file(@file)
 
-        parser = ::Nokogiri::XML::SAX::Parser.new(pt)
-        parser.parse_file(@file)
+      unless (errors = pt.errors).empty?
+        @errors << errors
+      end
 
-        unless (errors = pt.errors).empty?
-          @errors << errors
-        end
-
-        begin
-          ::FileUtils.mv(@file, AnlasImport::BACKUP_DIR)
-        rescue SystemCallError
-          puts "Не могу переместить файл `#{@file_name}` в `#{AnlasImport::BACKUP_DIR}`"
-          ::FileUtils.rm_rf(@file)
-        end
-
-      end # unless
+      begin
+        ::FileUtils.mv(@file, ::AnlasImport::Base.backup_dir)
+      rescue SystemCallError
+        puts "Не могу переместить файл `#{@file_name}` в `#{::AnlasImport::Base.backup_dir}`"
+        ::FileUtils.rm_rf(@file)
+      end
 
     end # work_with_file
 
-    def catalog_for_import(prefix)
+    def catalog_for_import(postfix)
 
-      catalog_import = @conn.collection("catalogs").find_one({
-        "import_prefix" => (prefix.blank? ? "_" : prefix)
-      })
+      unless (catalog = @catalogs[postfix])
 
-      catalog_import ? catalog_import : false
+        catalog = ::Catalog.safely.where(:import => postfix).first
+        @catalogs[postfix] = catalog if catalog
+
+      end # unless
+
+      catalog
 
     end # catalog_for_import
 
-    def target_exists(marking_of_goods)
+    def find_item(marking_of_goods)
+      ::Item.where(:marking_of_goods => marking_of_goods).first
+    end # find_item
 
-      item = @conn.collection("items").find_one({
-        "marking_of_goods" => marking_of_goods
-      })
+    def insert(catalog, artikul, artikulprod, name, purchasing_price, available, gtd_number, storehouse)
 
-      item ? item : false
+      item = ::Item.new
 
-    end # target_exists
+      item.marking_of_goods = artikul
+      item.marking_of_goods_manufacturer = artikulprod
 
-    def insert(artikul, artikulprod, name, purchasing_price, available, gtd_number, storehouse, catalog)
+      item.catalog_id = catalog.id
+      item.name_1c    = name
+      item.name       = name
+      item.meta_title = name
+      item.unmanaged  = true
 
-      doc = {
+      item.purchasing_price = purchasing_price
 
-        "name_1c"         => name,
-        "name"            => name,
-        "meta_title"      => name,
-        "unmanaged"       => true,
+      item.available  = available
+      item.gtd_number = gtd_number
+      item.storehouse = storehouse
 
-        "purchasing_price"=> purchasing_price.to_i,
+      item.imported_at  = ::Time.now.utc
 
-        "storehouse"      => storehouse,
-        "gtd_number"      => gtd_number,
-
-        "marking_of_goods" => artikul,
-        "available"       => available.to_i,
-        "marking_of_goods_manufacturer" => artikulprod,
-
-        "imported_at"     => ::Time.now.utc,
-        "created_at"      => ::Time.now.utc,
-
-        "catalog_id"      => catalog["_id"],
-        "catalog_lft"     => catalog["lft"],
-        "catalog_rgt"     => catalog["rgt"]
-      }
-
-      opts = { :safe => true }
-
-      begin
-
-        @conn.collection("admin").update(
-          {:name => "Item_counter"}, {"$inc" => {:count => 1}}, {:upsert => true}
-        )
-
-        counter = @conn.collection("admin").find_one(:name => "Item_counter")
-        doc["uri"] = (counter ? counter["count"] : 0)
-
-        @conn.collection("items").insert(doc, opts)
-
-        return true
-
-      rescue => e
-        @errors << "[INSERT: #{artikul}] #{e}"
+      unless item.save(validate: false)
+        @errors << "[INSERT: #{artikul}] #{item.errors.inspect}"
         return false
-      end # begin
+      end
+
+      true
 
     end # insert
 
-    def update(artikul, name, purchasing_price, available)
+    def update(item, name, purchasing_price, available, gtd_number, storehouse)
 
-      selector = { "marking_of_goods" => artikul }
+      item.name_1c    = name
 
-      doc = {
-        "name_1c"           => name,
-        "purchasing_price"  => purchasing_price.to_i,
-        "available"         => available.to_i,
-        "imported_at"       => ::Time.now.utc
-      }
+      item.purchasing_price = purchasing_price
 
-      opts = { :safe => true }
+      item.available  = available
+      item.gtd_number = gtd_number
+      item.storehouse = storehouse
 
-      begin
+      item.imported_at  = ::Time.now.utc
 
-        @conn.collection("items").update(selector, { "$set" => doc }, opts)
-        return true
-
-      rescue => e
-        @errors << "[UPDATE: #{artikul}] #{e}"
+      unless item.save(validate: false)
+        @errors << "[UPDATE: #{item.marking_of_goods}] #{item.errors.inspect}"
         return false
-      end # begin
+      end
+
+      true
 
     end # update
 
     def skip_by_name(name)
-      (name =~ /^я{2,}/u) === 0
+      (name =~ /\A\s*я{2,}/u) === 0
     end # skip_by_name
 
     def clear_name(name)
-      name.sub(/\s{0,}\+\s{0,}подарок\!{0,}\z/i, "")
+
+      name
+        .sub(/\A\s+/, "")
+        .gsub(/\!{0,}\z/i, "")
+        .gsub(/акция/i, "")
+        .gsub(/подарок/i, "")
+        .gsub(/не заказывать/i, "")
+        .gsub(/снижена цена/i, "")
+        .gsub(/выведены/i, "")
+        .gsub(/\(\)/, "")
+        .gsub(/\s{0,}\+\s{0,}\z/, "")
+        .gsub(/(\s){2,}/, '\\1')
+        .sub(/\s+\z/, "")
+
     end # clear_name
 
     def prefix_file

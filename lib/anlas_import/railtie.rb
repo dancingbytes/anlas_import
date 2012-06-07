@@ -1,13 +1,12 @@
-# encoding: utf-8
 require 'rails/railtie'
 
 module AnlasImport
 
   class Railtie < ::Rails::Railtie #:nodoc:
 
-    initializer 'anlas_import' do |app|
+    config.after_initialize do
 
-      ::AnlasImport::Base.run if ::AnlasImport.can_start?
+      ::AnlasImport::Base.run
 
     end # initializer
 

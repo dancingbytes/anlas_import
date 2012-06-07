@@ -73,7 +73,7 @@ module AnlasImport
         attrs["ostatok"] || 0,
 
         # gtd_number (s),
-        attrs["number_GTD"] || "",
+        (attrs["number_GTD"] || "").gsub(/\-/, ""),
 
         # storehouse (s)
         attrs["sklad"] || ""

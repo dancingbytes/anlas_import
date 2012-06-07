@@ -1,21 +1,17 @@
 # encoding: utf-8
 module AnlasImport
 
-  PROC_NAME = "anlas_import_xml"
+  class Base
 
-  class << self
+    def self.backup_dir
+      "/home/webmaster/backups/imports/"
+    end # backup_dir
 
-    def can_start?
+    def self.run
+      puts "[AnlasImport::Base] Method `run` must be overwrited."
+    end # self.run
 
-      return false if defined?(::IRB)
-      return false if defined?(::Rake)
-      return false unless defined?(::Rails)
-      return false if ::Rails.env.to_s != "production"
-      true
-
-    end # can_start?
-
-  end # class << self
+  end # Base
 
 end # AnlasImport
 
@@ -29,8 +25,6 @@ require 'anlas_import/version'
 
 require 'anlas_import/ext'
 require 'anlas_import/mailer'
-
-require 'anlas_import/base'
 
 require 'anlas_import/xml_parser'
 require 'anlas_import/worker'
