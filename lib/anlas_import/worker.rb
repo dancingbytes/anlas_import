@@ -135,6 +135,7 @@ module AnlasImport
       item.available  = available
       item.gtd_number = gtd_number
       item.storehouse = storehouse
+      item.supplier_code = supplier
 
       item.imported_at  = ::Time.now.utc
 
@@ -156,6 +157,8 @@ module AnlasImport
       item.available  = available
       item.gtd_number = gtd_number
       item.storehouse = storehouse
+      # TODO Незабыть выпилить, после того, как все товары обновятся
+      item.supplier_code = supplier
 
       item.imported_at  = ::Time.now.utc
 
@@ -188,6 +191,19 @@ module AnlasImport
         .sub(/\s+\z/, "")
 
     end # clear_name
+
+    def supplier
+      @supplier ||= {
+        'a' => 1,
+        'e' => 2,
+        'h' => 3,
+        't' => 4,
+        'и' => 5,
+        'g' => 6,
+        'v' => 7,
+        'z' => 8
+      }[prefix_file]
+    end # supplier
 
     def prefix_file
       @file_name.scan(/^([a-z]+)_/).flatten.first || ""
