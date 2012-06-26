@@ -124,7 +124,7 @@ module AnlasImport
       item.marking_of_goods = artikul
       item.marking_of_goods_manufacturer = artikulprod
 
-      item.catalog_id = catalog.id
+      item.import_catalog_id = catalog.id
       item.name_1c    = name
       item.name       = name
       item.meta_title = name
