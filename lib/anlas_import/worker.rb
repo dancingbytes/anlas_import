@@ -129,6 +129,7 @@ module AnlasImport
       item.name       = name
       item.meta_title = name
       item.unmanaged  = true
+      item.public     = true
 
       item.purchasing_price = purchasing_price
 
