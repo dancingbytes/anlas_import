@@ -42,7 +42,7 @@ module AnlasImport
     def init_saver
 
       # Блок сохраниения данных в базу
-      @saver = lambda { |artikul, artikulprod, name, purchasing_price, available, gtd_number, storehouse|
+      @saver = lambda { |artikul, artikulprod, name, purchasing_price, available, gtd_number, storehouse, country, country_code, unit, unit_code|
 
         name        = clear_name(name).strip.escape
         artikul     = artikul.strip.escape
@@ -54,7 +54,8 @@ module AnlasImport
 
           if (item = find_item(artikul))
 
-            if update(item, name, purchasing_price, available, gtd_number, storehouse)
+            if update(item, name, purchasing_price, available, gtd_number, storehouse,
+                       country, country_code, unit, unit_code)
               @upd << artikul
             end
 
@@ -62,7 +63,8 @@ module AnlasImport
 
             if (catalog = catalog_for_import(postfix))
 
-              if insert(catalog, artikul, artikulprod, name, purchasing_price, available, gtd_number, storehouse)
+              if insert(catalog, artikul, artikulprod, name, purchasing_price, available,
+                        gtd_number, storehouse, country, country_code, unit, unit_code)
                 @ins << artikul
               end
 
@@ -117,7 +119,9 @@ module AnlasImport
       ::Item.where(:marking_of_goods => marking_of_goods).first
     end # find_item
 
-    def insert(catalog, artikul, artikulprod, name, purchasing_price, available, gtd_number, storehouse)
+    def insert(catalog, artikul, artikulprod, name, purchasing_price,
+               available, gtd_number, storehouse, country, country_code,
+               unit, unit_code)
 
       item = ::Item.new
 
@@ -136,6 +140,10 @@ module AnlasImport
       item.available  = available
       item.gtd_number = gtd_number
       item.storehouse = storehouse
+      item.country    = clear_country(country)
+      item.unit       = unit
+      item.unit_code     = unit_code
+      item.country_code  = country_code
       item.supplier_code = supplier
 
       item.imported_at  = ::Time.now.utc
@@ -149,7 +157,8 @@ module AnlasImport
 
     end # insert
 
-    def update(item, name, purchasing_price, available, gtd_number, storehouse)
+    def update(item, name, purchasing_price, available, gtd_number, storehouse,
+               country, country_code, unit, unit_code)
 
       item.name_1c    = name
 
@@ -158,8 +167,12 @@ module AnlasImport
       item.available  = available
       item.gtd_number = gtd_number
       item.storehouse = storehouse
+
       # TODO Незабыть выпилить, после того, как все товары обновятся
-      item.supplier_code = supplier
+      item.country    = clear_country(country)
+      item.unit       = unit
+      item.unit_code     = unit_code
+      item.country_code  = country_code
 
       item.imported_at  = ::Time.now.utc
 
@@ -192,6 +205,10 @@ module AnlasImport
         .sub(/\s+\z/, "")
 
     end # clear_name
+
+    def clear_country(country)
+      country.gsub(/---/, '')
+    end # clear_country
 
     def supplier
       @supplier ||= {

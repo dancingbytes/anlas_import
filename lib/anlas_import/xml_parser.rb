@@ -76,8 +76,19 @@ module AnlasImport
         (attrs["number_GTD"] || "").gsub(/\-/, ""),
 
         # storehouse (s)
-        attrs["sklad"] || ""
+        attrs["sklad"] || "",
 
+        # country (s)
+        attrs["country"] || '',
+
+        # country_code (i)
+        attrs["country_kod"] || 0,
+
+        # unit (s)
+        attrs["ed"] || '',
+
+        # unit_code (i)
+        attrs["okei"] || 0
       )
 
     end # tag_nom
