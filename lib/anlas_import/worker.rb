@@ -162,17 +162,16 @@ module AnlasImport
 
       item.name_1c    = name
 
-      item.purchasing_price = purchasing_price
+      item.purchasing_price = purchasing_price if available > 0
 
       item.available  = available
-      item.gtd_number = gtd_number
       item.storehouse = storehouse
-
-      # TODO Незабыть выпилить, после того, как все товары обновятся
-      item.country    = clear_country(country)
       item.unit       = unit
-      item.unit_code     = unit_code
-      item.country_code  = country_code
+      item.unit_code  = unit_code
+
+      item.gtd_number ||= gtd_number
+      item.country    ||= clear_country(country)
+      item.country_code  ||= country_code
 
       item.imported_at  = ::Time.now.utc
 
