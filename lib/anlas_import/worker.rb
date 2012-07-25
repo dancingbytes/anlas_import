@@ -160,11 +160,13 @@ module AnlasImport
     def update(item, name, purchasing_price, available, gtd_number, storehouse,
                country, country_code, unit, unit_code)
 
+      item_count = available.to_i
+
       item.name_1c    = name
 
-      item.purchasing_price = purchasing_price if available.to_i > 0
+      item.purchasing_price = purchasing_price if item_count > 0
 
-      item.available  = available
+      item.available  = item_count > 0 ? available : 0
       item.storehouse = storehouse
       item.unit       = unit
       item.unit_code  = unit_code
