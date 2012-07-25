@@ -162,7 +162,7 @@ module AnlasImport
 
       item.name_1c    = name
 
-      item.purchasing_price = purchasing_price if available > 0
+      item.purchasing_price = purchasing_price if available.to_i > 0
 
       item.available  = available
       item.storehouse = storehouse
