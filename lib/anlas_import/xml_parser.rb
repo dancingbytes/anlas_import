@@ -4,13 +4,22 @@ module AnlasImport
   # Класс-шаблон по разбору товарных xml-файлов
   class XmlParser < Nokogiri::XML::SAX::Document
 
+    PRICES = {
+      'a' => '5Скидка',
+      'e' => 'Закупочные',
+      'v' => 'Скидка 5%',
+      'z' => 'Скидка 5%',
+      'g' => 'Скидка 5%',
+      'h' => '5 Скидка',
+      't' => '5Скидка'
+    }
+
     def initialize(saver, options = {})
 
       @options = {
-        "purchasing_price" => ["Закупочные", "5Скидка", "5 Скидка" "Скидка 5%"]
+        "purchasing_price" => PRICES[options[:prefix]]
       }.merge(options)
 
-      #
       @errors = []
       @saver  = saver.respond_to?(:call) ? saver : lambda {}
 

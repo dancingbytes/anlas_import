@@ -84,7 +84,7 @@ module AnlasImport
 
       init_saver
 
-      pt = ::AnlasImport::XmlParser.new(@saver)
+      pt = ::AnlasImport::XmlParser.new(@saver, {:prefix => prefix_file})
 
       parser = ::Nokogiri::XML::SAX::Parser.new(pt)
       parser.parse_file(@file)
