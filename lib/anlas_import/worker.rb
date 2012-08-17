@@ -42,7 +42,7 @@ module AnlasImport
     def init_saver
 
       # Блок сохраниения данных в базу
-      @saver = lambda { |artikul, artikulprod, name, purchasing_price, available, gtd_number, storehouse, country, country_code, unit, unit_code|
+      @saver = lambda { |artikul, artikulprod, name, purchasing_price, available, gtd_number, storehouse, country, country_code, unit, unit_code, supplier_pur_price|
 
         name        = clear_name(name).strip.escape
         artikul     = artikul.strip.escape
@@ -55,7 +55,7 @@ module AnlasImport
           if (item = find_item(artikul))
 
             if update(item, name, purchasing_price, available, gtd_number, storehouse,
-                       country, country_code, unit, unit_code)
+                       country, country_code, unit, unit_code, supplier_pur_price)
               @upd << artikul
             end
 
@@ -64,7 +64,7 @@ module AnlasImport
             if (catalog = catalog_for_import(postfix))
 
               if insert(catalog, artikul, artikulprod, name, purchasing_price, available,
-                        gtd_number, storehouse, country, country_code, unit, unit_code)
+                        gtd_number, storehouse, country, country_code, unit, unit_code, supplier_pur_price)
                 @ins << artikul
               end
 
@@ -121,7 +121,7 @@ module AnlasImport
 
     def insert(catalog, artikul, artikulprod, name, purchasing_price,
                available, gtd_number, storehouse, country, country_code,
-               unit, unit_code)
+               unit, unit_code, supplier_pur_price)
 
       item = ::Item.new
 
@@ -145,6 +145,7 @@ module AnlasImport
       item.unit_code     = unit_code
       item.country_code  = country_code
       item.supplier_code = supplier
+      item.supplier_pur_price = supplier_pur_price
 
       item.imported_at  = ::Time.now.utc
 
@@ -158,13 +159,14 @@ module AnlasImport
     end # insert
 
     def update(item, name, purchasing_price, available, gtd_number, storehouse,
-               country, country_code, unit, unit_code)
+               country, country_code, unit, unit_code, supplier_pur_price)
 
       item_count = available.to_i
 
       item.name_1c    = name
 
       item.purchasing_price = purchasing_price if item_count > 0
+      item.supplier_pur_price = supplier_pur_price
 
       item.available  = item_count > 0 ? available : 0
       item.storehouse = storehouse

@@ -14,6 +14,8 @@ module AnlasImport
       't' => '5Скидка'
     }
 
+    SUPPLIER_PUR_PRICE = ['Закупочные', 'Закупочная']
+
     def initialize(saver, options = {})
 
       @options = {
@@ -56,6 +58,7 @@ module AnlasImport
 
       name = attrs["name"]
       @purchasing_price_key = attrs["id"]  if @options["purchasing_price"].include?(name)
+      @supplier_pur_price = attrs["id"] if SUPPLIER_PUR_PRICE.include?(name)
 
     end # tag_price
 
@@ -97,7 +100,10 @@ module AnlasImport
         attrs["ed"] || '',
 
         # unit_code (i)
-        attrs["okei"] || 0
+        attrs["okei"] || 0,
+
+        # supplier purchasing price
+        attrs[supplier_pur_price] || 0
       )
 
     end # tag_nom
@@ -105,6 +111,10 @@ module AnlasImport
     def purchasing_price_key
       "price#{@purchasing_price_key}"
     end # purchasing_price_key
+
+    def supplier_pur_price
+      "price#{@supplier_pur_price}"
+    end
 
     def validate_purchasing_price_key(attrs)
 
