@@ -5,13 +5,13 @@ module AnlasImport
   class XmlParser < Nokogiri::XML::SAX::Document
 
     PRICES = {
-      'a' => '5Скидка',
-      'e' => 'Закупочные',
-      'v' => 'Скидка 5%',
-      'z' => 'Скидка 5%',
-      'g' => 'Скидка 5%',
-      'h' => '5 Скидка',
-      't' => '5Скидка'
+      'Аксессуары' => '5Скидка',
+      'Автоэлектроника' => 'Закупочные',
+      'Автохимия' => '5 Скидка',
+      'Инструмент' => '5Скидка',
+      'ГАЗ' => 'Скидка 5%',
+      'АВТО_ВАЗ' => 'Скидка 5%',
+      'ВАЗ_Импорт' => 'Скидка 5%'
     }
 
     SUPPLIER_PUR_PRICE = ['Закупочные', 'Закупочная']
@@ -19,7 +19,6 @@ module AnlasImport
     def initialize(saver, options = {})
 
       @options = {
-        "purchasing_price" => PRICES[options[:prefix]]
       }.merge(options)
 
       @errors = []
@@ -33,6 +32,7 @@ module AnlasImport
 
       case name
 
+        when "doc" then tag_doc(attrs)
         when "price" then tag_price(attrs)
         when "nom"   then tag_nom(attrs)
 
@@ -54,10 +54,14 @@ module AnlasImport
 
     private
 
+    def tag_doc(attrs)
+      @department = attrs["department"].strip.escape
+    end # tag_doc
+
     def tag_price(attrs)
 
       name = attrs["name"]
-      @purchasing_price_key = attrs["id"]  if @options["purchasing_price"].include?(name)
+      @purchasing_price_key = attrs["id"]  if PRICES[@department] == name
       @supplier_pur_price = attrs["id"] if SUPPLIER_PUR_PRICE.include?(name)
 
     end # tag_price
@@ -103,7 +107,10 @@ module AnlasImport
         attrs["okei"] || 0,
 
         # supplier purchasing price
-        attrs[supplier_pur_price] || 0
+        attrs[supplier_pur_price] || 0,
+
+        # department
+        @department
       )
 
     end # tag_nom

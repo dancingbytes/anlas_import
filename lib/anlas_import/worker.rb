@@ -42,12 +42,13 @@ module AnlasImport
     def init_saver
 
       # Блок сохраниения данных в базу
-      @saver = lambda { |artikul, artikulprod, name, purchasing_price, available, gtd_number, storehouse, country, country_code, unit, unit_code, supplier_pur_price|
+      @saver = lambda { |artikul, artikulprod, name, purchasing_price, available, gtd_number, storehouse, country, country_code, unit, unit_code, supplier_pur_price, department|
 
         name        = clear_name(name).strip.escape
         artikul     = artikul.strip.escape
         artikulprod = artikulprod.strip.escape
         postfix     = artikul[-1] || ""
+        @department = department
 
         # Проверка товара на наличие букв "яя" вначле названия (такие товары не выгружаем)
         unless skip_by_name(name)
@@ -84,7 +85,7 @@ module AnlasImport
 
       init_saver
 
-      pt = ::AnlasImport::XmlParser.new(@saver, {:prefix => prefix_file})
+      pt = ::AnlasImport::XmlParser.new(@saver)
 
       parser = ::Nokogiri::XML::SAX::Parser.new(pt)
       parser.parse_file(@file)
@@ -172,6 +173,7 @@ module AnlasImport
       item.storehouse = storehouse
       item.unit       = unit
       item.unit_code  = unit_code
+      item.supplier_code = supplier
 
       item.gtd_number ||= gtd_number
       item.country    ||= clear_country(country)
@@ -215,20 +217,16 @@ module AnlasImport
 
     def supplier
       @supplier ||= {
-        'a' => 1,
-        'e' => 2,
-        'h' => 3,
-        't' => 4,
-        'и' => 5,
-        'g' => 6,
-        'v' => 7,
-        'z' => 8
-      }[prefix_file]
+        'Аксессуары' => 1,
+        'Автоэлектроника' => 2,
+        'Автохимия' => 3,
+        'Инструмент' => 4,
+        'Иномарки' => 5,
+        'ГАЗ' => 6,
+        'АВТО_ВАЗ' => 7,
+        'ВАЗ_Импорт' => 8
+      }[@department]
     end # supplier
-
-    def prefix_file
-      @file_name.scan(/^([a-z]+)_/).flatten.first || ""
-    end # prefix_file
 
   end # Worker
 
