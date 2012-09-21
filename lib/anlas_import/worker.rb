@@ -107,7 +107,7 @@ module AnlasImport
 
       unless (catalog = @catalogs[postfix])
 
-        catalog = ::Catalog.safely.where(:import => postfix).first
+        catalog = ::Catalog.where(:import => postfix).first
         @catalogs[postfix] = catalog if catalog
 
       end # unless
