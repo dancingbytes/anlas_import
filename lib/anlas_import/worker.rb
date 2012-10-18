@@ -37,6 +37,19 @@ module AnlasImport
       @ins
     end # insert
 
+    def supplier
+      @supplier ||= {
+        'Аксессуары' => 1,
+        'Автоэлектроника' => 2,
+        'Автохимия' => 3,
+        'Инструмент' => 4,
+        'Иномарки' => 5,
+        'ГАЗ' => 6,
+        'АВТО_ВАЗ' => 7,
+        'ВАЗ_Импорт' => 8
+      }[@department]
+    end # supplier
+
     private
 
     def init_saver
@@ -214,19 +227,6 @@ module AnlasImport
     def clear_country(country)
       country.gsub(/---/, '')
     end # clear_country
-
-    def supplier
-      @supplier ||= {
-        'Аксессуары' => 1,
-        'Автоэлектроника' => 2,
-        'Автохимия' => 3,
-        'Инструмент' => 4,
-        'Иномарки' => 5,
-        'ГАЗ' => 6,
-        'АВТО_ВАЗ' => 7,
-        'ВАЗ_Импорт' => 8
-      }[@department]
-    end # supplier
 
   end # Worker
 

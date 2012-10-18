@@ -39,6 +39,7 @@ module AnlasImport
       end # if
 
       after
+
       yield(@inserted_items, @updaed_items) if @has_files && block_given?
       reset
 
@@ -88,6 +89,14 @@ module AnlasImport
         @errors << worker.errors
         @inserted_items = @inserted_items.concat(worker.inserted)
         @updaed_items   = @updaed_items.concat(worker.updated)
+        @supplier_code  = worker.supplier
+
+        # Обнуляем количество для товаров не обновлявшихся 5 дней
+        Item.where(:supplier_code => @supplier_code, :imported_at.lt => Time.now.utc - 5.days).each do |item|
+          item.available = 0
+          item.save(validate: false)
+        end
+
 
       end # each
 
