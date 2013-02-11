@@ -37,7 +37,7 @@ class ImportController < ApplicationController
   def auth
 
     authenticate_or_request_with_http_basic do |login, password|
-      login == AnlasImport::login && password == AnlasImport::password
+      (login == ::AnlasImport::login && password == ::AnlasImport::password)
     end
 
   end # auth

@@ -25,8 +25,8 @@ module AnlasImport
 
   def password(v = nil)
 
-    @login = v unless v.blank?
-    @login
+    @pass = v unless v.blank?
+    @pass
 
   end # password
 
