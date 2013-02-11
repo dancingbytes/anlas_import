@@ -7,10 +7,9 @@ module AnlasImport
 
     def initialize(file)
 
-      @catalogs = {}
-
-      @errors, @ins, @upd, @file = [], [], [], file
-      @file_name = ::File.basename(@file)
+      @errors, @file  = [], file
+      @ins, @upd      = 0, 0
+      @file_name      = ::File.basename(@file)
 
       unless @file && ::FileTest.exists?(@file)
         @errors << "Файл не найден: #{@file}"
@@ -37,68 +36,103 @@ module AnlasImport
       @ins
     end # insert
 
-    def supplier
-      @supplier ||= {
-        'Аксессуары' => 1,
-        'Автоэлектроника' => 2,
-        'Автохимия' => 3,
-        'Инструмент' => 4,
-        'Иномарки' => 5,
-        'ГАЗ' => 6,
-        'АВТО_ВАЗ' => 7,
-        'ВАЗ_Импорт' => 8
-      }[@department]
-    end # supplier
+    def load(
+
+      code_1c,
+      department,
+
+      marking_of_goods,
+      marking_of_goods_manufacturer,
+
+      name,
+
+      supplier_purchasing_price,
+      supplier_wholesale_price,
+      purchasing_price,
+
+      available,
+
+      country,
+      country_code,
+
+      storehouse,
+      bar_code,
+
+      weight,
+
+      gtd_number,
+      unit,
+      unit_code
+
+      )
+
+      # Код поставщика
+      supplier_code = suppliers[department.downcase]
+
+      # Если код поставщика не найден -- завершаем работу
+      if supplier_code.nil?
+        @errors << "[Errors] Поставщик (#{department}) не зарегистрирован в системе. Товар: #{marking_of_goods} -> #{name}"
+        return
+      end
+
+      if (item = find_item(supplier_code, code_1c, marking_of_goods))
+
+        # Если товар по заданным параметрам существует -- обновляем его.
+        update_item(
+          item,
+          code_1c,
+          supplier_code,
+          marking_of_goods,
+          marking_of_goods_manufacturer,
+          name,
+          supplier_purchasing_price,
+          supplier_wholesale_price,
+          purchasing_price,
+          available,
+          country,
+          country_code,
+          storehouse,
+          bar_code,
+          weight,
+          gtd_number,
+          unit,
+          unit_code
+        )
+
+      else
+
+        # Иначе -- создаем новый товар.
+        insert_item(
+          code_1c,
+          supplier_code,
+          marking_of_goods,
+          marking_of_goods_manufacturer,
+          name,
+          supplier_purchasing_price,
+          supplier_wholesale_price,
+          purchasing_price,
+          available,
+          country,
+          country_code,
+          storehouse,
+          bar_code,
+          weight,
+          gtd_number,
+          unit,
+          unit_code
+        )
+
+      end # if
+
+    end # load
 
     private
 
-    def init_saver
-
-      # Блок сохраниения данных в базу
-      @saver = lambda { |artikul, artikulprod, name, purchasing_price, available, gtd_number, storehouse, country, country_code, unit, unit_code, supplier_pur_price, department|
-
-        name        = clear_name(name).strip.escape
-        artikul     = artikul.strip.escape
-        artikulprod = artikulprod.strip.escape
-        postfix     = artikul[-1] || ""
-        @department = department
-
-        # Проверка товара на наличие букв "яя" вначле названия (такие товары не выгружаем)
-        unless skip_by_name(name)
-
-          if (item = find_item(artikul))
-
-            if update(item, name, purchasing_price, available, gtd_number, storehouse,
-                       country, country_code, unit, unit_code, supplier_pur_price)
-              @upd << artikul
-            end
-
-          else
-
-            if (catalog = catalog_for_import(postfix))
-
-              if insert(catalog, artikul, artikulprod, name, purchasing_price, available,
-                        gtd_number, storehouse, country, country_code, unit, unit_code, supplier_pur_price)
-                @ins << artikul
-              end
-
-            else
-              @errors << "[Errors] Каталог выгрузки не найден. Товар: #{artikul} -> #{name} (postfix: #{postfix})"
-            end
-
-          end # if
-
-        end # unless
-
-      } # saver
-
-    end # init_saver
-
     def work_with_file
 
-      init_saver
+      suppliers
 
-      pt = ::AnlasImport::XmlParser.new(@saver)
+      pt = ::AnlasImport::XmlParser.new(self)
 
       parser = ::Nokogiri::XML::SAX::Parser.new(pt)
       parser.parse_file(@file)
@@ -108,125 +142,184 @@ module AnlasImport
       end
 
       begin
-        ::FileUtils.mv(@file, ::AnlasImport::Base.backup_dir)
+
+        if ::AnlasImport::backup_dir && ::FileTest.directory?(::AnlasImport::backup_dir)
+          ::FileUtils.mv(@file, ::AnlasImport.backup_dir)
+        end
+
       rescue SystemCallError
-        puts "Не могу переместить файл `#{@file_name}` в `#{::AnlasImport::Base.backup_dir}`"
+        puts "Не могу переместить файл `#{@file_name}` в `#{::AnlasImport.backup_dir}`"
+      ensure
         ::FileUtils.rm_rf(@file)
       end
 
     end # work_with_file
 
-    def catalog_for_import(postfix)
+    def suppliers
 
-      unless (catalog = @catalogs[postfix])
+      return @suppliers if @suppliers
 
-        catalog = ::Catalog.where(:import => postfix).first
-        @catalogs[postfix] = catalog if catalog
+      @suppliers = {}
 
-      end # unless
+      ::Supplier.only(:name, :code).each do |suppl|
+        @suppliers[suppl.name.downcase] = suppl.code
+      end
 
-      catalog
+      @suppliers
 
-    end # catalog_for_import
+    end # suppliers
 
-    def find_item(marking_of_goods)
-      ::Item.where(:marking_of_goods => marking_of_goods).first
+    def find_item(supplier_code, code_1c, marking_of_goods)
+
+      item = ::Item.only(
+
+        :code_1c,
+        :supplier_code,
+        :marking_of_goods,
+        :marking_of_goods_manufacturer,
+        :name,
+
+        :supplier_purchasing_price,
+        :supplier_wholesale_price,
+        :purchasing_price,
+
+        :available,
+        :country,
+        :country_code,
+        :storehouse,
+        :bar_code,
+        :weight,
+        :gtd_number,
+        :unit,
+        :unit_code,
+
+        :price_type_rate,
+        :sale_rate,
+        :for_sale
+
+      )
+
+      item.any_of({
+        supplier_code:  supplier_code,
+        code_1c:        code_1c
+      }, {
+        marking_of_goods: marking_of_goods
+      }).first
+
     end # find_item
 
-    def insert(catalog, artikul, artikulprod, name, purchasing_price,
-               available, gtd_number, storehouse, country, country_code,
-               unit, unit_code, supplier_pur_price)
+    def insert_item(
 
-      item = ::Item.new
+      code_1c,
+      supplier_code,
+      marking_of_goods,
+      marking_of_goods_manufacturer,
+      name,
+      supplier_purchasing_price,
+      supplier_wholesale_price,
+      purchasing_price,
+      available,
+      country,
+      country_code,
+      storehouse,
+      bar_code,
+      weight,
+      gtd_number,
+      unit,
+      unit_code
 
-      item.marking_of_goods = artikul
-      item.marking_of_goods_manufacturer = artikulprod
+      )
 
-      item.import_catalog_id = catalog.id
-      item.name_1c    = name
-      item.name       = name
-      item.meta_title = name
-      item.unmanaged  = true
-      item.public     = true
+      item                                = ::Item.new
 
-      item.purchasing_price = purchasing_price
+      item.code_1c                        = code_1c
+      item.supplier_code                  = supplier_code
+      item.marking_of_goods               = marking_of_goods
+      item.marking_of_goods_manufacturer  = marking_of_goods_manufacturer
+      item.name_1c                        = name
+      item.supplier_purchasing_price      = supplier_purchasing_price
+      item.supplier_wholesale_price       = supplier_wholesale_price
+      item.purchasing_price               = purchasing_price
+      item.available                      = available
+      item.country                        = country
+      item.country_code                   = country_code
+      item.storehouse                     = storehouse
+      item.bar_code                       = bar_code
+      item.weight                         = weight
+      item.gtd_number                     = gtd_number
+      item.unit                           = unit
+      item.unit_code                      = unit_code
 
-      item.available  = available
-      item.gtd_number = gtd_number
-      item.storehouse = storehouse
-      item.country    = clear_country(country)
-      item.unit       = unit
-      item.unit_code     = unit_code
-      item.country_code  = country_code
-      item.supplier_code = supplier
-      item.supplier_pur_price = supplier_pur_price
+      item.imported_at                    = ::Time.now.utc
 
-      item.imported_at  = ::Time.now.utc
+      item.unmanaged                      = true
+      item.public                         = true
+      item.name                           = name
+      item.meta_title                     = name
 
-      unless item.save(validate: false)
-        @errors << "[INSERT: #{artikul}] #{item.errors.inspect}"
-        return false
+      if item.save(validate: false)
+        @ins += 1
+        true
+      else
+        @errors << "[INSERT] (#{supplier_code}-#{code_1c}: #{marking_of_goods}) #{item.errors.inspect}"
+        false
       end
 
-      true
+    end # insert_item
 
-    end # insert
+    def update_item(
 
-    def update(item, name, purchasing_price, available, gtd_number, storehouse,
-               country, country_code, unit, unit_code, supplier_pur_price)
+      item,
 
-      item_count = available.to_i
+      code_1c,
+      supplier_code,
+      marking_of_goods,
+      marking_of_goods_manufacturer,
+      name,
+      supplier_purchasing_price,
+      supplier_wholesale_price,
+      purchasing_price,
+      available,
+      country,
+      country_code,
+      storehouse,
+      bar_code,
+      weight,
+      gtd_number,
+      unit,
+      unit_code
 
-      item.name_1c    = name
+      )
 
-      item.purchasing_price = purchasing_price if item_count > 0
-      item.supplier_pur_price = supplier_pur_price
+      item.code_1c                        = code_1c
+      item.supplier_code                  = supplier_code
+      item.marking_of_goods               = marking_of_goods
+      item.marking_of_goods_manufacturer  = marking_of_goods_manufacturer
+      item.name_1c                        = name
+      item.supplier_purchasing_price      = supplier_purchasing_price
+      item.supplier_wholesale_price       = supplier_wholesale_price
+      item.purchasing_price               = purchasing_price
+      item.available                      = available
+      item.country                        = country
+      item.country_code                   = country_code
+      item.storehouse                     = storehouse
+      item.bar_code                       = bar_code
+      item.weight                         = weight
+      item.gtd_number                     = gtd_number
+      item.unit                           = unit
+      item.unit_code                      = unit_code
 
-      item.available  = item_count > 0 ? available : 0
-      item.storehouse = storehouse
-      item.unit       = unit
-      item.unit_code  = unit_code
-      item.supplier_code = supplier
+      item.imported_at                    = ::Time.now.utc
 
-      item.gtd_number ||= gtd_number
-      item.country    ||= clear_country(country)
-      item.country_code  ||= country_code
-
-      item.imported_at  = ::Time.now.utc
-
-      unless item.save(validate: false)
-        @errors << "[UPDATE: #{item.marking_of_goods}] #{item.errors.inspect}"
-        return false
+      if item.save(validate: false)
+        @upd += 1
+        true
+      else
+        @errors << "[UPDATE] (#{supplier_code}-#{code_1c}: #{marking_of_goods}) #{item.errors.inspect}"
+        false
       end
 
-      true
-
-    end # update
-
-    def skip_by_name(name)
-      (name =~ /\A\s*я{2,}/u) === 0
-    end # skip_by_name
-
-    def clear_name(name)
-
-      name
-        .sub(/\A\s+/, "")
-        .gsub(/\!{0,}\z/i, "")
-        .gsub(/акция/i, "")
-        .gsub(/подарок/i, "")
-        .gsub(/не заказывать/i, "")
-        .gsub(/снижена цена/i, "")
-        .gsub(/выведены/i, "")
-        .gsub(/\(\)/, "")
-        .gsub(/\s{0,}\+\s{0,}\z/, "")
-        .gsub(/(\s){2,}/, '\\1')
-        .sub(/\s+\z/, "")
-
-    end # clear_name
-
-    def clear_country(country)
-      country.gsub(/---/, '')
-    end # clear_country
+    end # update_item
 
   end # Worker
 

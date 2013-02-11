@@ -5,12 +5,11 @@ module AnlasImport
   # Запуск обработчика. Отправка отчетов.
   class Manager
 
-    def initialize(import_dir, log_dir)
+    def self.run
+      new.run
+    end # self.run
 
-      @config = {
-        :dir => import_dir,
-        :log => log_dir
-      }
+    def initialize
 
       reset
       check_import_dir
@@ -26,11 +25,11 @@ module AnlasImport
         start = ::Time.now.to_i
         processing
 
-        if (@inserted_items.length + @updaed_items.length > 0)
+        if (@inserted_items + @updaed_items > 0)
 
           @errors << "[#{Time.now.strftime('%H:%M:%S %d-%m-%Y')}] Обработка файлов импорта ============================"
-          @errors << "Добавлено товаров: #{@inserted_items.length}"
-          @errors << "Обновлено товаров: #{@updaed_items.length}"
+          @errors << "Добавлено товаров: #{@inserted_items}"
+          @errors << "Обновлено товаров: #{@updaed_items}"
           @errors << "Затрачено времени: #{ '%0.3f' % (Time.now.to_f - start) } секунд."
           @errors << "===========================================================================\n"
 
@@ -40,7 +39,7 @@ module AnlasImport
 
       after
 
-      yield(@inserted_items, @updaed_items) if @has_files && block_given?
+      yield if @has_files && block_given?
       reset
 
     end # run
@@ -58,8 +57,8 @@ module AnlasImport
     def reset
 
       @errors         = []
-      @inserted_items = []
-      @updaed_items   = []
+      @inserted_items = 0
+      @updaed_items   = 0
       @has_files      = false
 
     end # reset
@@ -77,7 +76,7 @@ module AnlasImport
 
     def processing
 
-      files = ::Dir.glob( ::File.join(@config[:dir], "**", "*.xml") )
+      files = ::Dir.glob( ::File.join(::AnlasImport::import_dir, "**", "*.xml") )
       return unless files && files.size > 0
 
       @has_files = true
@@ -87,21 +86,10 @@ module AnlasImport
         worker = ::AnlasImport::Worker.new(xml_file).parse
 
         @errors << worker.errors
-        @inserted_items = @inserted_items.concat(worker.inserted)
-        @updaed_items   = @updaed_items.concat(worker.updated)
-        @supplier_code  = worker.supplier
-
-        # Обнуляем количество для товаров не обновлявшихся 5 дней
-        Item.where(:supplier_code => @supplier_code, :imported_at.lt => Time.now.utc - 5.days).each do |item|
-          item.available = 0
-          item.save(validate: false)
-        end
-
+        @inserted_items += worker.inserted
+        @updaed_items   += worker.updated
 
       end # each
-
-      @inserted_items.uniq!
-      @updaed_items.uniq!
 
       self
 
@@ -109,8 +97,8 @@ module AnlasImport
 
     def check_import_dir
 
-      unless @config[:dir] && ::FileTest.directory?(@config[:dir])
-        @errors << "Директория #{@config[:dir]} не существует!"
+      unless ::AnlasImport::import_dir && ::FileTest.directory?(::AnlasImport::import_dir)
+        @errors << "Директория #{::AnlasImport::import_dir} не существует!"
       end
 
     end # check_import_dir
@@ -118,7 +106,7 @@ module AnlasImport
     def extract_zip_files
 
       # Ищем и распаковываем все zip-архивы, после - удаляем
-      files = ::Dir.glob( ::File.join(@config[:dir], "**", "*.zip") )
+      files = ::Dir.glob( ::File.join(::AnlasImport::import_dir, "**", "*.zip") )
       return unless files && files.size > 0
 
       files.each do |zip|
@@ -129,7 +117,7 @@ module AnlasImport
 
             zip_file.each { |f|
 
-              f_path = ::File.join(@config[:dir], f.name)
+              f_path = ::File.join(::AnlasImport::import_dir, f.name)
               ::FileUtils.rm_rf f_path if ::File.exist?(f_path)
               ::FileUtils.mkdir_p(::File.dirname(f_path))
               zip_file.extract(f, f_path)
@@ -149,13 +137,13 @@ module AnlasImport
 
     def create_logger
 
-      return unless @config[:log] && ::FileTest.directory?(@config[:log])
+      return unless ::AnlasImport::log_dir && ::FileTest.directory?(::AnlasImport::log_dir)
       return if @logger
 
-      ::FileUtils.mkdir_p(@config[:log]) unless ::FileTest.directory?(@config[:log])
+      ::FileUtils.mkdir_p(::AnlasImport::log_dir) unless ::FileTest.directory?(::AnlasImport::log_dir)
       @logger = ::Logger.new(
         ::File.open(
-          ::File.join(@config[:log], "import.log"), ::File::WRONLY | ::File::APPEND | ::File::CREAT
+          ::File.join(::AnlasImport::log_dir, "import.log"), ::File::WRONLY | ::File::APPEND | ::File::CREAT
         )
       )
 

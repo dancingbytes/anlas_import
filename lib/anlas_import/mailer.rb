@@ -8,9 +8,9 @@ module Net
     private
 
     def each_crlf_line(src)
-      
+
       buffer_filling(@wbuf, src) do
-        
+
         while line = @wbuf.slice!(/\A.*(?:\n|\r\n|\r(?!\z))/u)
           yield line.chomp("\n") + "\r\n"
         end
@@ -19,7 +19,7 @@ module Net
 
     end # each_crlf_line
 
-  end # InternetMessageIO  
+  end # InternetMessageIO
 
 end # Net
 
@@ -32,7 +32,7 @@ module AnlasImport
       @config = {
         :from       => "robot@anlas.ru",
         :from_alias => "robot",
-        :to         => "info@anlas.ru", #"info@v-avto.ru",
+        :to         => "ivan@anlas.ru",
         :to_alias   => "admin",
         :domain     => "localhost",
         :port       => 25
@@ -50,7 +50,7 @@ module AnlasImport
       msg << "Date: #{::Time.now.strftime('%H:%M:%S %d-%m-%Y')}\r\n"
 
       msg << "\r\n#{message.utf8}\r\n"
-      
+
       ::Net::SMTP.start(@config[:domain], @config[:port]) do |smtp|
         smtp.send_message(msg, @config[:from], @config[:to])
       end

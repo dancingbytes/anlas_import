@@ -6,7 +6,20 @@ module AnlasImport
 
     config.after_initialize do
 
-      ::AnlasImport::Base.run
+      Imp( ::AnlasImport::proc_name, ::AnlasImport::daemon_log ) do
+
+        loop do
+
+          ::AnlasImport::Manager.run
+          sleep ::AnlasImport::wait
+
+        end # loop
+
+      end # Imp
+
+      if !defined?(::IRB) && !defined?(::Rake) && ::Rails.env.to_s == "production"
+        Imp(::AnlasImport::proc_name).start
+      end # if
 
     end # initializer
 
