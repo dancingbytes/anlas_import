@@ -252,7 +252,7 @@ module AnlasImport
 
       item.imported_at                    = ::Time.now.utc
 
-      item.unmanaged                      = true
+      item.managed                        = true
       item.public                         = true
       item.name                           = name
       item.meta_title                     = name
