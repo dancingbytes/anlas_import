@@ -16,13 +16,13 @@ module AnlasImport
 
     def parse
 
-      log "[#{Time.now.strftime('%H:%M:%S %d-%m-%Y')}] Обработка файлов импорта ============================\n"
+      log "[#{Time.now.strftime('%H:%M:%S %d-%m-%Y')}] Обработка файлов импорта ============================"
 
       unless @file && ::FileTest.exists?(@file)
         log "Файл не найден: #{@file}"
       else
 
-        log "Файл: #{@file}"
+        log "Файл: #{@file}\n"
 
         start = Time.now.to_i
 
