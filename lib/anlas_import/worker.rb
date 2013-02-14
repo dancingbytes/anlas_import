@@ -173,6 +173,7 @@ module AnlasImport
 
       item = ::Item.only(
 
+        :uri,
         :code_1c,
         :supplier_code,
         :marking_of_goods,
@@ -199,10 +200,11 @@ module AnlasImport
 
       )
 
-      item.any_of({
+      item.where({
         supplier_code:  supplier_code,
         code_1c:        code_1c
-      }, {
+      }).first || \
+      item.where({
         marking_of_goods: marking_of_goods
       }).first
 
@@ -234,21 +236,21 @@ module AnlasImport
 
       item.code_1c                        = code_1c
       item.supplier_code                  = supplier_code
-      item.marking_of_goods               = marking_of_goods
-      item.marking_of_goods_manufacturer  = marking_of_goods_manufacturer
+      item.marking_of_goods               = marking_of_goods || ""
+      item.marking_of_goods_manufacturer  = marking_of_goods_manufacturer || ""
       item.name_1c                        = name
       item.supplier_purchasing_price      = supplier_purchasing_price
       item.supplier_wholesale_price       = supplier_wholesale_price
       item.purchasing_price               = purchasing_price
-      item.available                      = available
-      item.country                        = country
-      item.country_code                   = country_code
-      item.storehouse                     = storehouse
-      item.bar_code                       = bar_code
-      item.weight                         = weight
-      item.gtd_number                     = gtd_number
-      item.unit                           = unit
-      item.unit_code                      = unit_code
+      item.available                      = available     || 0
+      item.country                        = country       || ""
+      item.country_code                   = country_code  || ""
+      item.storehouse                     = storehouse    || ""
+      item.bar_code                       = bar_code      || ""
+      item.weight                         = weight        || 0
+      item.gtd_number                     = gtd_number    || ""
+      item.unit                           = unit          || ""
+      item.unit_code                      = unit_code     || 0
 
       item.imported_at                    = ::Time.now.utc
 
@@ -293,21 +295,21 @@ module AnlasImport
 
       item.code_1c                        = code_1c
       item.supplier_code                  = supplier_code
-      item.marking_of_goods               = marking_of_goods
-      item.marking_of_goods_manufacturer  = marking_of_goods_manufacturer
+      item.marking_of_goods               = marking_of_goods              unless marking_of_goods.blank?
+      item.marking_of_goods_manufacturer  = marking_of_goods_manufacturer unless marking_of_goods_manufacturer.nil?
       item.name_1c                        = name
       item.supplier_purchasing_price      = supplier_purchasing_price
       item.supplier_wholesale_price       = supplier_wholesale_price
       item.purchasing_price               = purchasing_price
-      item.available                      = available
-      item.country                        = country
-      item.country_code                   = country_code
-      item.storehouse                     = storehouse
-      item.bar_code                       = bar_code
-      item.weight                         = weight
-      item.gtd_number                     = gtd_number
-      item.unit                           = unit
-      item.unit_code                      = unit_code
+      item.available                      = available     unless available.nil?
+      item.country                        = country       unless country.nil?
+      item.country_code                   = country_code  unless country_code.nil?
+      item.storehouse                     = storehouse    unless storehouse.nil?
+      item.bar_code                       = bar_code      unless bar_code.nil?
+      item.weight                         = weight        unless weight.nil?
+      item.gtd_number                     = gtd_number    unless gtd_number.nil?
+      item.unit                           = unit          unless unit.nil?
+      item.unit_code                      = unit_code     unless unit_code.nil?
 
       item.imported_at                    = ::Time.now.utc
 

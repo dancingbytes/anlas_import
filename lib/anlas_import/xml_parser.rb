@@ -131,13 +131,13 @@ module AnlasImport
         attrs["department"],
 
         # marking_of_goods (s)
-        (attrs["artikul"] || attrs["marking_of_goods"]).clean_whitespaces,
+        (attrs["artikul"] || attrs["marking_of_goods"]).try(:clean_whitespaces),
 
         # marking_of_goods_manufacturer (s)
-        (attrs["artikulprod"] || "").clean_whitespaces,
+        attrs["artikulprod"].try(:clean_whitespaces),
 
         # name (s)
-        attrs["name"].clean_whitespaces,
+        attrs["name"].try(:clean_whitespaces),
 
         # Цена закупа поставщика
         # supplier_purchasing_price (f)
@@ -153,38 +153,38 @@ module AnlasImport
 
         # Наличие (остатки)
         # available (i)
-        (attrs["ostatok"] || attrs["available"]).try(:to_i) || 0,
+        (attrs["ostatok"] || attrs["available"]).try(:to_i),
 
         # Страна призводитель
         # country (s)
-        (attrs["country"] || "").gsub(/\-/, ""),
+        attrs["country"].try(:gsub, /\-/, ""),
 
         # Код страны производителя
         # country_code (i)
-        (attrs["country_kod"] || attrs["country_code"]).try(:to_i) || 0,
+        (attrs["country_kod"] || attrs["country_code"]).try(:to_i),
 
         # Склад
         # storehouse (s)
-        attrs["sklad"] || attrs["storehouse"] || "",
+        attrs["sklad"] || attrs["storehouse"],
 
         # Штрих-код
         # bar_code (s)
-        attrs["shtrih_kod"] || attrs["bar_code"] || "",
+        attrs["shtrih_kod"] || attrs["bar_code"],
 
         # Вес в килограммах
         # weight (f)
-        (attrs["ves"] || attrs["weight"]).try(:to_i) || 0,
+        (attrs["ves"] || attrs["weight"]).try(:to_i),
 
         # gtd_number (s)
-        (attrs["number_GTD"] || attrs["gtd_number"] || "").gsub(/\-/, ""),
+        (attrs["number_GTD"] || attrs["gtd_number"]).try(:gsub, /\-/, ""),
 
         # Название товарной единицы
         # unit (s)
-        attrs["ed"] || attrs["unit"] || "",
+        attrs["ed"] || attrs["unit"],
 
         # Код товарной единицы
         # unit_code (i)
-        (attrs["okei"] || attrs["unit_code"]).try(:to_i) || 0
+        (attrs["okei"] || attrs["unit_code"]).try(:to_i)
 
       )
 
@@ -200,7 +200,7 @@ module AnlasImport
 
     def validate_1c_77(attrs)
 
-      return if attrs["isGroupe"].nil? || attrs["isGroupe"].to_i != 0
+      return false if attrs.empty? || attrs["isGroupe"].nil? || attrs["isGroupe"].to_i != 0
 
       if attrs['id'].blank?
         @errors << "[Errors 1C 7.7] Не найден идентификатор у товара: #{attrs['artikul']}"
@@ -307,6 +307,10 @@ module AnlasImport
     end # stop_parse_item_price
 
     def validate_1c_8(attrs)
+
+      if attrs.empty?
+        return false
+      end
 
       if attrs['code_1c'].blank?
         @errors << "[Errors 1C 8] Не найден идентификатор у товара: #{attrs['marking_of_goods']}"
