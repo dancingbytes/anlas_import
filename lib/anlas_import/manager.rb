@@ -27,7 +27,7 @@ module AnlasImport
     def log(msg = "")
 
       create_logger unless @logger
-      @logger.error(msg) if @logger
+      @logger.error(msg)
       msg
 
     end # log
