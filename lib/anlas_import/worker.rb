@@ -5,36 +5,39 @@ module AnlasImport
   # при разборе xml-файла.
   class Worker
 
-    def initialize(file)
+    def initialize(file, manager)
 
-      @errors, @file  = [], file
-      @ins, @upd      = 0, 0
-      @file_name      = ::File.basename(@file)
-
-      unless @file && ::FileTest.exists?(@file)
-        @errors << "Файл не найден: #{@file}"
-      end # unless
+      @file       = file
+      @ins, @upd  = 0, 0
+      @file_name  = ::File.basename(@file)
+      @manager    = manager
 
     end # new
 
     def parse
 
-      work_with_file if @errors.empty?
+      log "[#{Time.now.strftime('%H:%M:%S %d-%m-%Y')}] Обработка файлов импорта ============================"
+
+      unless @file && ::FileTest.exists?(@file)
+        log "Файл не найден: #{@file}"
+      else
+
+        log(@file)
+
+        start = Time.now.to_i
+
+        work_with_file
+
+        log "Добавлено товаров: #{@ins}"
+        log "Обновлено товаров: #{@upd}"
+        log "Затрачено времени: #{ '%0.3f' % (Time.now.to_f - start) } секунд."
+        log ""
+
+      end
+
       self
 
     end # parse_file
-
-    def errors
-      @errors
-    end # report
-
-    def updated
-      @upd
-    end # updated
-
-    def inserted
-      @ins
-    end # insert
 
     def load(
 
@@ -71,7 +74,7 @@ module AnlasImport
 
       # Если код поставщика не найден -- завершаем работу
       if supplier_code.nil?
-        @errors << "[Errors] Поставщик (#{department}) не зарегистрирован в системе. Товар: #{marking_of_goods} -> #{name}"
+        log "[Errors] Поставщик (#{department}) не зарегистрирован в системе. Товар: #{marking_of_goods} -> #{name}"
         return
       end
 
@@ -126,6 +129,10 @@ module AnlasImport
 
     end # load
 
+    def log(msg)
+      @manager.log(msg)
+    end # log
+
     private
 
     def work_with_file
@@ -137,10 +144,6 @@ module AnlasImport
       parser = ::Nokogiri::XML::SAX::Parser.new(pt)
       parser.parse_file(@file)
 
-      unless (errors = pt.errors).empty?
-        @errors << errors
-      end
-
       begin
 
         if ::AnlasImport::backup_dir && ::FileTest.directory?(::AnlasImport::backup_dir)
@@ -148,7 +151,7 @@ module AnlasImport
         end
 
       rescue SystemCallError
-        puts "Не могу переместить файл `#{@file_name}` в `#{::AnlasImport.backup_dir}`"
+        log "Не могу переместить файл `#{@file_name}` в `#{::AnlasImport.backup_dir}`"
       ensure
         ::FileUtils.rm_rf(@file)
       end
@@ -263,7 +266,7 @@ module AnlasImport
         @ins += 1
         true
       else
-        @errors << "[INSERT] (#{supplier_code}-#{code_1c}: #{marking_of_goods}) #{item.errors.inspect}"
+        log "[INSERT] (#{supplier_code}-#{code_1c}: #{marking_of_goods}) #{item.errors.inspect}"
         false
       end
 
@@ -317,7 +320,7 @@ module AnlasImport
         @upd += 1
         true
       else
-        @errors << "[UPDATE] (#{supplier_code}-#{code_1c}: #{marking_of_goods}) #{item.errors.inspect}"
+        log "[UPDATE] (#{supplier_code}-#{code_1c}: #{marking_of_goods}) #{item.errors.inspect}"
         false
       end
 

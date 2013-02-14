@@ -10,37 +10,17 @@ module AnlasImport
     end # self.run
 
     def initialize
-
-      reset
-      check_import_dir
-
     end # new
 
     def run
 
-      before
+      @has_files = false
 
-      if @errors.empty?
-
-        start = ::Time.now.to_i
-        processing
-
-        if (@inserted_items + @updaed_items > 0)
-
-          @errors << "[#{Time.now.strftime('%H:%M:%S %d-%m-%Y')}] Обработка файлов импорта ============================"
-          @errors << "Добавлено товаров: #{@inserted_items}"
-          @errors << "Обновлено товаров: #{@updaed_items}"
-          @errors << "Затрачено времени: #{ '%0.3f' % (Time.now.to_f - start) } секунд."
-          @errors << "===========================================================================\n"
-
-        end # if
-
-      end # if
-
-      after
+      extract_zip_files
+      processing
+      close_logger
 
       yield if @has_files && block_given?
-      reset
 
     end # run
 
@@ -54,27 +34,12 @@ module AnlasImport
 
     private
 
-    def reset
-
-      @errors         = []
-      @inserted_items = 0
-      @updaed_items   = 0
-      @has_files      = false
-
-    end # reset
-
-    def before
-      extract_zip_files
-    end # before_start
-
-    def after
-
-      self.log(@errors.flatten.join("\n")) unless @errors.empty?
-      close_logger
-
-    end # after
-
     def processing
+
+      unless ::AnlasImport::import_dir && ::FileTest.directory?(::AnlasImport::import_dir)
+        log "Директория #{::AnlasImport::import_dir} не существует!"
+        return
+      end
 
       files = ::Dir.glob( ::File.join(::AnlasImport::import_dir, "**", "*.xml") )
       return unless files && files.size > 0
@@ -82,26 +47,12 @@ module AnlasImport
       @has_files = true
 
       files.each do |xml_file|
-
-        worker = ::AnlasImport::Worker.new(xml_file).parse
-
-        @errors << worker.errors
-        @inserted_items += worker.inserted
-        @updaed_items   += worker.updated
-
+        ::AnlasImport::Worker.new(xml_file, self).parse
       end # each
 
       self
 
     end # processing
-
-    def check_import_dir
-
-      unless ::AnlasImport::import_dir && ::FileTest.directory?(::AnlasImport::import_dir)
-        @errors << "Директория #{::AnlasImport::import_dir} не существует!"
-      end
-
-    end # check_import_dir
 
     def extract_zip_files
 

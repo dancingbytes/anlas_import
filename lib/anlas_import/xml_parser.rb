@@ -6,11 +6,9 @@ module AnlasImport
 
     def initialize(saver)
 
-      @errors = []
       @saver  = saver
       @price_types = {}
       @item   = {}
-
       @level  = 0
       @tags   = {}
 
@@ -86,16 +84,12 @@ module AnlasImport
     end # characters
 
     def error(string)
-      @errors << "[Errors] #{string}"
+      @saver.log "[XML Errors] #{string}"
     end # error
 
     def warning(string)
-      @errors << "[Warnings] #{string}"
+      @saver.log "[XML Warnings] #{string}"
     end # warning
-
-    def errors
-      @errors
-    end # errors
 
     private
 
@@ -203,37 +197,37 @@ module AnlasImport
       return false if attrs.empty? || attrs["isGroupe"].nil? || attrs["isGroupe"].to_i != 0
 
       if attrs['id'].blank?
-        @errors << "[Errors 1C 7.7] Не найден идентификатор у товара: #{attrs['artikul']}"
+        @saver.log "[Errors 1C 7.7] Не найден идентификатор у товара: #{attrs['artikul']}"
         return false
       end
 
       if attrs['department'].blank?
-        @errors << "[Errors 1C 7.7] Не найден поставщик у товара: #{attrs['artikul']}"
+        @saver.log "[Errors 1C 7.7] Не найден поставщик у товара: #{attrs['artikul']}"
         return false
       end
 
       if attrs['name'].blank?
-        @errors << "[Errors 1C 7.7] Не найдено название у товара: #{attrs['artikul']}"
+        @saver.log "[Errors 1C 7.7] Не найдено название у товара: #{attrs['artikul']}"
         return false
       end
 
       if attrs['artikul'].blank?
-        @errors << "[Errors 1C 7.7] Не найден артикул у товара: #{attrs['name']}"
+        @saver.log "[Errors 1C 7.7] Не найден артикул у товара: #{attrs['name']}"
         return false
       end
 
       if attrs['price_zakup'].blank?
-        @errors << "[Errors 1C 7.7] Не найдена закупочная цена у товара: #{attrs['artikul']} - #{attrs['name']}"
+        @saver.log "[Errors 1C 7.7] Не найдена закупочная цена у товара: #{attrs['artikul']} - #{attrs['name']}"
         return false
       end
 
       if attrs['price_opt'].blank?
-        @errors << "[Errors 1C 7.7] Не найдена оптовая цена у товара: #{attrs['artikul']} - #{attrs['name']}"
+        @saver.log "[Errors 1C 7.7] Не найдена оптовая цена у товара: #{attrs['artikul']} - #{attrs['name']}"
         return false
       end
 
       if attrs['price_kontr'].blank?
-        @errors << "[Errors 1C 7.7] Не найдена цена у товара: #{attrs['artikul']} - #{attrs['name']}"
+        @saver.log "[Errors 1C 7.7] Не найдена цена у товара: #{attrs['artikul']} - #{attrs['name']}"
         return false
       end
 
@@ -313,37 +307,37 @@ module AnlasImport
       end
 
       if attrs['code_1c'].blank?
-        @errors << "[Errors 1C 8] Не найден идентификатор у товара: #{attrs['marking_of_goods']}"
+        @saver.log "[Errors 1C 8] Не найден идентификатор у товара: #{attrs['marking_of_goods']}"
         return false
       end
 
       if attrs['department'].blank?
-        @errors << "[Errors 1C 8] Не найден поставщик у товара: #{attrs['marking_of_goods']}"
+        @saver.log "[Errors 1C 8] Не найден поставщик у товара: #{attrs['marking_of_goods']}"
         return false
       end
 
       if attrs['name'].blank?
-        @errors << "[Errors 1C 8] Не найдено название у товара: #{attrs['marking_of_goods']}"
+        @saver.log "[Errors 1C 8] Не найдено название у товара: #{attrs['marking_of_goods']}"
         return false
       end
 
       if attrs['marking_of_goods'].blank?
-        @errors << "[Errors 1C 8] Не найден артикул у товара: #{attrs['name']}"
+        @saver.log "[Errors 1C 8] Не найден артикул у товара: #{attrs['name']}"
         return false
       end
 
       if attrs['supplier_purchasing_price'].blank?
-        @errors << "[Errors 1C 8] Не найдена закупочная цена у товара: #{attrs['marking_of_goods']} - #{attrs['name']}"
+        @saver.log "[Errors 1C 8] Не найдена закупочная цена у товара: #{attrs['marking_of_goods']} - #{attrs['name']}"
         return false
       end
 
       if attrs['supplier_wholesale_price'].blank?
-        @errors << "[Errors 1C 8] Не найдена оптовая цена у товара: #{attrs['marking_of_goods']} - #{attrs['name']}"
+        @saver.log "[Errors 1C 8] Не найдена оптовая цена у товара: #{attrs['marking_of_goods']} - #{attrs['name']}"
         return false
       end
 
       if attrs['purchasing_price'].blank?
-        @errors << "[Errors 1C 8] Не найдена цена у товара: #{attrs['marking_of_goods']} - #{attrs['name']}"
+        @saver.log "[Errors 1C 8] Не найдена цена у товара: #{attrs['marking_of_goods']} - #{attrs['name']}"
         return false
       end
 
