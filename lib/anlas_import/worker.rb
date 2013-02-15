@@ -174,40 +174,11 @@ module AnlasImport
 
     def find_item(supplier_code, code_1c, marking_of_goods)
 
-      item = ::Item.only(
-
-        :uri,
-        :code_1c,
-        :supplier_code,
-        :marking_of_goods,
-        :marking_of_goods_manufacturer,
-        :name,
-
-        :supplier_purchasing_price,
-        :supplier_wholesale_price,
-        :purchasing_price,
-
-        :available,
-        :country,
-        :country_code,
-        :storehouse,
-        :bar_code,
-        :weight,
-        :gtd_number,
-        :unit,
-        :unit_code,
-
-        :price_type_rate,
-        :sale_rate,
-        :for_sale
-
-      )
-
-      item.where({
+      ::Item.where({
         supplier_code:  supplier_code,
         code_1c:        code_1c
       }).first || \
-      item.where({
+      ::Item.where({
         marking_of_goods: marking_of_goods
       }).first
 
