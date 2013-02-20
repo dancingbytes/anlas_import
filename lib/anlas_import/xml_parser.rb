@@ -66,7 +66,10 @@ module AnlasImport
         when "БазоваяЕдиница" then grub_item("unit")
 
         when "ЦенаЗаЕдиницу"  then
-          @item_price = @str  if for_item_price?
+          @item_price = @str.sub(/\A\s+/, "").sub(/\s+\z/, "").gsub(/(\s){2,}/, '\\1').try(:to_f)  if for_item_price?
+
+        when "ПроцентСкидки"  then
+          @item_discount = @str.sub(/\A\s+/, "").sub(/\s+\z/, "").gsub(/(\s){2,}/, '\\1').try(:to_f) if for_item_price?
 
         when "ИдТипаЦены"   then
           @item_price_id = @str  if for_item_price?
@@ -283,12 +286,10 @@ module AnlasImport
 
           when "Опт" then
             @item["supplier_wholesale_price"] = @item_price
+            @item["purchasing_price"]         = @item_price * (1 - @item_discount*0.01) if @item_discount
 
           when "Закупочная" then
             @item["supplier_purchasing_price"] = @item_price
-
-          when "Интернет розничная" then
-            @item["purchasing_price"] = @item_price
 
         end # case
 
@@ -296,6 +297,7 @@ module AnlasImport
 
       @item_price     = nil
       @item_price_id  = nil
+      @item_discount  = nil
       @start_parse_item_price = false
 
     end # stop_parse_item_price

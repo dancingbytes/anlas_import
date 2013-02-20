@@ -46,7 +46,8 @@ module AnlasImport
 
       @has_files = true
 
-      files.each do |xml_file|
+      # Сортируем по дате последнего доступа по-возрастанию
+      files.sort{ |a, b| ::File.new(a).mtime <=> ::File.new(b).atime }.each do |xml_file|
         ::AnlasImport::Worker.new(xml_file, self).parse
       end # each
 
@@ -95,8 +96,10 @@ module AnlasImport
       @logger = ::Logger.new(
         ::File.open(
           ::File.join(::AnlasImport::log_dir, "import.log"), ::File::WRONLY | ::File::APPEND | ::File::CREAT
-        )
+        ),
+        'weekly'
       )
+      @logger
 
     end # create_logger
 
