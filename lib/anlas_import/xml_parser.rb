@@ -138,15 +138,15 @@ module AnlasImport
 
         # Цена закупа поставщика
         # supplier_purchasing_price (f)
-        (attrs["price_zakup"] || attrs["supplier_purchasing_price"]).try(:to_f) || 0,
+        (attrs["price_zakup"] || attrs["supplier_purchasing_price"]).try(:to_f).try(:round, 2) || 0,
 
         # Оптовая цена поставщика
-        # supplier_wholesale_price (i)
-        (attrs["price_opt"] || attrs["supplier_wholesale_price"]).try(:to_i) || 0,
+        # supplier_wholesale_price (f)
+        (attrs["price_opt"] || attrs["supplier_wholesale_price"]).try(:to_f).try(:round, 2) || 0,
 
         # Цена закупа интернет-магазина
-        # purchasing_price (i)
-        (attrs["price_kontr"] || attrs["purchasing_price"]).try(:to_i) || 0,
+        # purchasing_price (f)
+        (attrs["price_kontr"] || attrs["purchasing_price"]).try(:to_f).try(:round, 2) || 0,
 
         # Наличие (остатки)
         # available (i)
