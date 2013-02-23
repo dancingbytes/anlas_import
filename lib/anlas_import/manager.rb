@@ -71,14 +71,13 @@ module AnlasImport
 
             zip_file.each { |f|
 
-              f_path = ::File.join(::AnlasImport::import_dir, f.name)
+              # Создаем дополнительную вложенность т.к. 1С 8 выгружает всегда одни и теже
+              # навания файлов, и если таких выгрузок будет много, то при распковке файлы
+              # будут перезатираться
+              f_path = ::File.join(::AnlasImport::import_dir, "#{i}", f.name)
               ::FileUtils.rm_rf f_path if ::File.exist?(f_path)
               ::FileUtils.mkdir_p(::File.dirname(f_path))
               zip_file.extract(f, f_path)
-
-              # Переименовываем распакованный файл (т.к. 1С 8 выгружает всегда одни и теже навания файлов,
-              # и если таких выгрузок будет много, то при распковке файлы будут перезатираться)
-              ::FileUtils.mv(f_path, ::File.join(::AnlasImport::import_dir, "#{i}-#{f.name}") )
 
             } # each
 

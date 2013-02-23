@@ -177,10 +177,10 @@ module AnlasImport
       ::Item.where({
         supplier_code:  supplier_code,
         code_1c:        code_1c
-      }).first || \
+      }).limit(1).to_a[0] || \
       ::Item.where({
         marking_of_goods: marking_of_goods
-      }).first
+      }).limit(1).to_a[0]
 
     end # find_item
 
