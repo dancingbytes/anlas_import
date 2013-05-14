@@ -17,9 +17,9 @@ module AnlasImport
 
       end # Imp
 
-      if !defined?(::IRB) && !defined?(::Rake) && ::Rails.env.to_s == "production"
-        Imp(::AnlasImport::proc_name).start
-      end # if
+#      if !defined?(::IRB) && !defined?(::Rake) && ::Rails.env.to_s == "production"
+#        Imp(::AnlasImport::proc_name).start
+#      end # if
 
     end # initializer
 
