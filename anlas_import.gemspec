@@ -22,7 +22,7 @@ Gem::Specification.new do |s|
 
   s.add_dependency 'railties', '>= 3.0.0'
   s.add_dependency 'nokogiri', '~> 1.5.0'
-  s.add_dependency 'zip'
+  s.add_dependency 'rubyzip'
   s.add_dependency 'logger'
 
 end
