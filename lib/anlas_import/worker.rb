@@ -65,7 +65,9 @@ module AnlasImport
 
       gtd_number,
       unit,
-      unit_code
+      unit_code,
+
+      brand_name
 
       )
 
@@ -99,7 +101,8 @@ module AnlasImport
           weight,
           gtd_number,
           unit,
-          unit_code
+          unit_code,
+          brand_name
         )
 
       else
@@ -122,7 +125,8 @@ module AnlasImport
           weight,
           gtd_number,
           unit,
-          unit_code
+          unit_code,
+          brand_name
         )
 
       end # if
