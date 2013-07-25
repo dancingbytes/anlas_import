@@ -202,7 +202,8 @@ module AnlasImport
       weight,
       gtd_number,
       unit,
-      unit_code
+      unit_code,
+      brand_name
 
       )
 
@@ -232,6 +233,14 @@ module AnlasImport
       item.public                         = true
       item.name                           = name
       item.meta_title                     = name
+
+      unless brand_name.blank?
+
+        if (brand = ::Brand.find_or_create_by({ name: brand_name }))
+          item.brand_id  = brand.id
+        end
+
+      end # unless
 
       if item.save(validate: false)
         @ins += 1
@@ -263,7 +272,8 @@ module AnlasImport
       weight,
       gtd_number,
       unit,
-      unit_code
+      unit_code,
+      brand_name
 
       )
 

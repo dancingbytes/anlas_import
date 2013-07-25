@@ -57,6 +57,9 @@ module AnlasImport
         when "Штрихкод"     then grub_item("bar_code")
         when "Артикул"      then grub_item("marking_of_goods")
 
+        when "АртикулПроизводителя" then grub_item("marking_of_goods_manufacturer")
+        when "Производитель" then grub_item("brand_name")
+
         when "КодСтранаПроисхождения" then grub_item("country_code")
         when "СтранаПроисхождения"    then grub_item("country")
 
@@ -131,7 +134,7 @@ module AnlasImport
         (attrs["artikul"] || attrs["marking_of_goods"]).try(:clean_whitespaces),
 
         # marking_of_goods_manufacturer (s)
-        attrs["artikulprod"].try(:clean_whitespaces),
+        (attrs["artikulprod"] || attrs["marking_of_goods_manufacturer"]).try(:clean_whitespaces),
 
         # name (s)
         attrs["name"].try(:clean_whitespaces),
@@ -181,7 +184,11 @@ module AnlasImport
 
         # Код товарной единицы
         # unit_code (i)
-        (attrs["okei"] || attrs["unit_code"]).try(:to_i)
+        (attrs["okei"] || attrs["unit_code"]).try(:to_i),
+
+        # Бренд
+        # brand_name (s)
+        attrs["brand_name"].try(:clean_whitespaces)
 
       )
 
