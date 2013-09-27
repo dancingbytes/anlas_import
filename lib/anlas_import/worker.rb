@@ -289,7 +289,7 @@ module AnlasImport
       item.supplier_purchasing_price      = supplier_purchasing_price
       item.supplier_wholesale_price       = supplier_wholesale_price
       item.purchasing_price               = purchasing_price
-      item.available                      = available     unless available.nil?
+
       item.country                        = country       unless country.nil?
       item.country_code                   = country_code  unless country_code.nil?
       item.storehouse                     = storehouse    unless storehouse.nil?
@@ -300,6 +300,17 @@ module AnlasImport
       item.unit_code                      = unit_code     unless unit_code.nil?
 
       item.imported_at                    = ::Time.now.utc
+
+      unless available.nil?
+
+        available_before = (item.available_before || 0)
+
+        if available_before == 0 || available > available_before
+          item.available        = available
+          item.available_before = 0
+        end
+
+      end
 
       if item.save(validate: false)
         @upd += 1
