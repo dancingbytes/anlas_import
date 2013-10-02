@@ -73,9 +73,16 @@ module AnlasImport
               # Создаем дополнительную вложенность т.к. 1С 8 выгружает всегда одни и теже
               # навания файлов, и если таких выгрузок будет много, то при распковке файлы
               # будут перезатираться
-              f_path = ::File.join(::AnlasImport::import_dir, "#{i}", f.name)
+
+              f_path = ::File.join(
+                ::AnlasImport::import_dir,
+                "#{i}",
+                f.file? ? "#{rand}-#{Time.now.to_f}-#{f.name}" : f.name
+              )
+
               ::FileUtils.rm_rf f_path if ::File.exist?(f_path)
               ::FileUtils.mkdir_p(::File.dirname(f_path))
+
               zip_file.extract(f, f_path)
 
             } # each
@@ -98,7 +105,7 @@ module AnlasImport
 
       ::FileUtils.mkdir_p(::AnlasImport::log_dir) unless ::FileTest.directory?(::AnlasImport::log_dir)
       log_file = ::File.open(
-        ::File.join(::AnlasImport::log_dir, "import.log"), 
+        ::File.join(::AnlasImport::log_dir, "import.log"),
         ::File::WRONLY | ::File::APPEND | ::File::CREAT
       )
       log_file.sync = true
