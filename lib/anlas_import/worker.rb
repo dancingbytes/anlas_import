@@ -302,8 +302,8 @@ module AnlasImport
       item.imported_at                    = ::Time.now.utc
 
       tm  = ::Time.now.utc
-      uwt = item.update_wait_for || tm
-      item.available = available || 0 if uwt >= tm
+      uwt = item.update_wait_for.try(:utc) || tm
+      item.available = available || 0 if uwt <= tm
 
       if item.save(validate: false)
         @upd += 1
