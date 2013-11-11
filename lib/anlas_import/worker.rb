@@ -178,10 +178,22 @@ module AnlasImport
 
     def find_item(supplier_code, code_1c, marking_of_goods)
 
-      ::Item.where({
+      itm = ::Item.where({
         supplier_code:  supplier_code,
         code_1c:        code_1c
       }).first
+
+      return itm unless item.nil?
+
+      itm ::Item.where({
+        supplier_code:    supplier_code,
+        marking_of_goods: marking_of_goods
+      }).first
+
+      return if itm.nil?
+
+      itm.set(:code_1c, code_1c)
+      itm
 
     end # find_item
 
