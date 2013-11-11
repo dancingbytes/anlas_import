@@ -80,7 +80,7 @@ module AnlasImport
         return
       end
 
-      if (item = find_item(supplier_code, code_1c, marking_of_goods))
+      unless (item = find_item(supplier_code, code_1c, marking_of_goods)).nil?
 
         # Если товар по заданным параметрам существует -- обновляем его.
         update_item(
@@ -178,22 +178,13 @@ module AnlasImport
 
     def find_item(supplier_code, code_1c, marking_of_goods)
 
-      itm = ::Item.where({
+      ::Item.where({
         supplier_code:  supplier_code,
         code_1c:        code_1c
-      }).first
-
-      return itm unless itm.nil?
-
-      itm ::Item.where({
+      }).first || ::Item.where({
         supplier_code:    supplier_code,
         marking_of_goods: marking_of_goods
       }).first
-
-      return if itm.nil?
-
-      itm.set(:code_1c, code_1c)
-      itm
 
     end # find_item
 
