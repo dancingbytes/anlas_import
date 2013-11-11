@@ -183,7 +183,7 @@ module AnlasImport
         code_1c:        code_1c
       }).first
 
-      return itm unless item.nil?
+      return itm unless itm.nil?
 
       itm ::Item.where({
         supplier_code:    supplier_code,
