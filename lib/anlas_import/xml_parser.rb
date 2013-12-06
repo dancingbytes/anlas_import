@@ -45,41 +45,41 @@ module AnlasImport
 
       case name
 
-        when "Ид" then
+        when "Ид"             then
           @price_id  = @str  if for_price?
           grub_item("code_1c")
 
-        when "Наименование"  then
+        when "Наименование"   then
           @price_name = @str if for_price?
           grub_item("name")
 
-        when "Отдел"        then grub_item("department")
-        when "Штрихкод"     then grub_item("bar_code")
-        when "Артикул"      then grub_item("marking_of_goods")
+        when "Отдел"                  then grub_item("department")
+        when "Штрихкод"               then grub_item("bar_code")
+        when "Артикул"                then grub_item("marking_of_goods")
 
-        when "АртикулПроизводителя" then grub_item("marking_of_goods_manufacturer")
-        when "Производитель" then grub_item("brand_name")
+        when "АртикулПроизводителя"   then grub_item("marking_of_goods_manufacturer")
+        when "Производитель"          then grub_item("brand_name")
 
         when "КодСтранаПроисхождения" then grub_item("country_code")
         when "СтранаПроисхождения"    then grub_item("country")
 
-        when "НомерГТД"     then grub_item("gtd_number")
-        when "Количество"   then grub_item("available")
+        when "НомерГТД"               then grub_item("gtd_number")
+        when "Количество"             then grub_item("available")
 
-        when "БазоваяЕдиница" then grub_item("unit")
+        when "БазоваяЕдиница"         then grub_item("unit")
 
         when "ЦенаЗаЕдиницу"  then
-          @item_price = @str.sub(/\A\s+/, "").sub(/\s+\z/, "").gsub(/(\s){2,}/, '\\1').try(:to_f)  if for_item_price?
+          @item_price     = get_price(@str)  if for_item_price?
 
         when "ПроцентСкидки"  then
-          @item_discount = @str.sub(/\A\s+/, "").sub(/\s+\z/, "").gsub(/(\s){2,}/, '\\1').try(:to_f) if for_item_price?
+          @item_discount  = get_price(@str) if for_item_price?
 
-        when "ИдТипаЦены"   then
-          @item_price_id = @str  if for_item_price?
+        when "ИдТипаЦены"     then
+          @item_price_id  = @str  if for_item_price?
 
-        when "ТипЦены"      then stop_parse_price
-        when "Предложение"  then stop_parse_item
-        when "Цена"         then stop_parse_item_price
+        when "ТипЦены"                then stop_parse_price
+        when "Предложение"            then stop_parse_item
+        when "Цена"                   then stop_parse_item_price
 
       end # case
 
@@ -98,6 +98,16 @@ module AnlasImport
     end # warning
 
     private
+
+    def get_price(price)
+
+      price.
+        sub(/\A\s+/, "").
+        sub(/\s+\z/, "").
+        gsub(/(\s){2,}/, '\\1').
+        try(:to_f)
+
+    end # get_price
 
     def parent_tag
       @tags[@level] || ""
