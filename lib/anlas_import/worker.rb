@@ -299,10 +299,7 @@ module AnlasImport
       item.unit_code                      = unit_code     unless unit_code.nil?
 
       item.imported_at                    = ::Time.now.utc
-
-      tm  = ::Time.now.utc
-      uwt = item.update_wait_for.try(:utc) || tm
-      item.available = available || 0 if uwt <= tm
+      item.available                      = available || 0
 
       if item.save(validate: false)
         @upd += 1
