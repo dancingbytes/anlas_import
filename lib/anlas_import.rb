@@ -9,6 +9,33 @@ module AnlasImport
 
   extend self
 
+  DEPS = {
+
+    'аксессуары'  => 1,
+
+    'химия'       => 3,
+    'автохимия'   => 3,
+
+    'инструменты' => 4,
+    'инструмент'  => 4,
+    'номенклатура инструментов' => 4,
+
+    'ваз'         => 2,
+    'авто_ваз'    => 2,
+    'номенклатура ваз'  => 2,
+
+    'газ'         => 6,
+    'номенклатура газ'  => 6,
+
+    'иномарки'    => 5,
+    'номенклатура иномарок' => 5
+
+  }.freeze
+
+  def supplier_code(name)
+    ::AnlasImport::DEPS[name.downcase]
+  end # supplier_code
+
   def proc_name(v = nil)
 
     @proc_name = v unless v.blank?

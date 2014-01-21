@@ -11,6 +11,7 @@ module AnlasImport
       @ins, @upd  = 0, 0
       @file_name  = ::File.basename(@file)
       @manager    = manager
+      @departments = {}
 
     end # new
 
@@ -28,9 +29,11 @@ module AnlasImport
 
         work_with_file
 
-        log "Добавлено товаров: #{@ins}"
-        log "Обновлено товаров: #{@upd}"
-        log "Затрачено времени: #{ '%0.3f' % (Time.now.to_f - start) } секунд."
+        log "[Обработаны отделы] #{@departments.values.join('. ')}."
+        log "Товаров: "
+        log "   добавлено: #{@ins}"
+        log "   обновлено: #{@upd}"
+        log "Затрачено времени: #{ '%0.3f' % (Time.now.to_f - start) } сек."
         log ""
 
       end
@@ -72,7 +75,10 @@ module AnlasImport
       )
 
       # Код поставщика
-      supplier_code = suppliers[department.downcase]
+      supplier_code = ::AnlasImport.supplier_code(department)
+
+      # Запоминаем отделы
+      @departments[ supplier_code || 0 ] ||= department
 
       # Если код поставщика не найден -- завершаем работу
       if supplier_code.nil?
@@ -141,8 +147,6 @@ module AnlasImport
 
     def work_with_file
 
-      suppliers
-
       pt = ::AnlasImport::XmlParser.new(self)
 
       parser = ::Nokogiri::XML::SAX::Parser.new(pt)
@@ -161,20 +165,6 @@ module AnlasImport
       end
 
     end # work_with_file
-
-    def suppliers
-
-      return @suppliers if @suppliers
-
-      @suppliers = {}
-
-      ::Supplier.only(:name, :code).each do |suppl|
-        @suppliers[suppl.name.downcase] = suppl.code
-      end
-
-      @suppliers
-
-    end # suppliers
 
     def find_item(supplier_code, code_1c, marking_of_goods)
 
