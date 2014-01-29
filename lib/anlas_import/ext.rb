@@ -12,11 +12,11 @@ module AnlasImport
 
     def escape
 
-      self.
-        gsub(/'/, "\\\\'").
-        gsub(/"/, '\\\\"').
-        gsub(/\n/, "\\n").
-        gsub(/\r/, "\\r")
+      str = self.gsub(/'/, "\\\\'")
+      str.gsub!(/"/, '\\\\"')
+      str.gsub!(/\n/, "\\n")
+      str.gsub!(/\r/, "\\r")
+      str
 
     end # escape
 
