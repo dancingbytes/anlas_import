@@ -95,6 +95,10 @@ module AnlasImport
 
   end # wait
 
+  def run
+    ::AnlasImport::Manager.run
+  end # run
+
 end # AnlasImport
 
 require 'anlas_import/version'

@@ -10,16 +10,12 @@ module AnlasImport
 
         loop do
 
-          ::AnlasImport::Manager.run
+          ::AnlasImport::run
           sleep ::AnlasImport::wait
 
         end # loop
 
       end # Imp
-
-#      if !defined?(::IRB) && !defined?(::Rake) && ::Rails.env.to_s == "production"
-#        Imp.start(::AnlasImport::proc_name)
-#      end # if
 
     end # initializer
 

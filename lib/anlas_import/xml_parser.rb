@@ -24,9 +24,6 @@ module AnlasImport
 
       case name
 
-        # 1C 7.7
-        when "nom"          then tag_nom(attrs)
-
         # 1C 8
         when "ТипЦены"      then start_parse_price
         when "Предложение"  then start_parse_item
@@ -203,57 +200,6 @@ module AnlasImport
       )
 
     end # save_item
-
-    #
-    # 1C 7.7
-    #
-
-    def tag_nom(attrs)
-      save_item(attrs) if validate_1c_77(attrs)
-    end # tag_nom
-
-    def validate_1c_77(attrs)
-
-      return false if attrs.empty? || attrs["isGroupe"].nil? || attrs["isGroupe"].to_i != 0
-
-      if attrs['id'].blank?
-        @saver.log "[Errors 1C 7.7] Не найден идентификатор у товара: #{attrs['artikul']}"
-        return false
-      end
-
-      if attrs['department'].blank?
-        @saver.log "[Errors 1C 7.7] Не найден поставщик у товара: #{attrs['artikul']}"
-        return false
-      end
-
-      if attrs['name'].blank?
-        @saver.log "[Errors 1C 7.7] Не найдено название у товара: #{attrs['artikul']}"
-        return false
-      end
-
-      if attrs['artikul'].blank?
-        @saver.log "[Errors 1C 7.7] Не найден артикул у товара: #{attrs['name']}"
-        return false
-      end
-
-      if attrs['price_zakup'].blank?
-        @saver.log "[Errors 1C 7.7] Не найдена закупочная цена у товара: #{attrs['artikul']} - #{attrs['name']}"
-        return false
-      end
-
-      if attrs['price_opt'].blank?
-        @saver.log "[Errors 1C 7.7] Не найдена оптовая цена у товара: #{attrs['artikul']} - #{attrs['name']}"
-        return false
-      end
-
-      if attrs['price_kontr'].blank?
-        @saver.log "[Errors 1C 7.7] Не найдена цена у товара: #{attrs['artikul']} - #{attrs['name']}"
-        return false
-      end
-
-      true
-
-    end # validate_prices_1c_77
 
     #
     # 1C 8
