@@ -160,11 +160,11 @@ module AnlasImport
 
         # Наличие (остатки)
         # available (i)
-        (attrs["ostatok"] || attrs["available"]).try(:to_i),
+        (attrs["ostatok"] || attrs["available"]),
 
         # Страна призводитель
         # country (s)
-        attrs["country"].try(:gsub, /\-/, ""),
+        attrs["country"].try(:clean_whitespaces).try(:gsub, /\-/, ""),
 
         # Код страны производителя
         # country_code (i)
@@ -172,22 +172,22 @@ module AnlasImport
 
         # Склад
         # storehouse (s)
-        attrs["sklad"] || attrs["storehouse"],
+        (attrs["sklad"] || attrs["storehouse"]).try(:clean_whitespaces),
 
         # Штрих-код
         # bar_code (s)
-        attrs["shtrih_kod"] || attrs["bar_code"],
+        (attrs["shtrih_kod"] || attrs["bar_code"]).try(:clean_whitespaces),
 
         # Вес в килограммах
         # weight (f)
         (attrs["ves"] || attrs["weight"]).try(:to_i),
 
         # gtd_number (s)
-        (attrs["number_GTD"] || attrs["gtd_number"]).try(:gsub, /\-/, ""),
+        (attrs["number_GTD"] || attrs["gtd_number"]).try(:clean_whitespaces).try(:gsub, /\-/, ""),
 
         # Название товарной единицы
         # unit (s)
-        attrs["ed"] || attrs["unit"],
+        (attrs["ed"] || attrs["unit"]).try(:clean_whitespaces),
 
         # Код товарной единицы
         # unit_code (i)

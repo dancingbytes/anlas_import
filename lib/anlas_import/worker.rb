@@ -211,7 +211,7 @@ module AnlasImport
       item.supplier_purchasing_price      = supplier_purchasing_price
       item.supplier_wholesale_price       = supplier_wholesale_price
       item.purchasing_price               = purchasing_price
-      item.available                      = available     || 0
+      item.available                      = available.try(:to_i) || 0
       item.country                        = country       || ""
       item.country_code                   = country_code  || ""
       item.storehouse                     = storehouse    || ""
@@ -291,7 +291,7 @@ module AnlasImport
         item.set(:unit_code, unit_code)         unless unit_code.nil?
 
         item.set(:imported_at, ::Time.now.utc)
-        item.set(:available, available || 0)
+        item.set(:available, available.try(:to_i) || 0) unless available.blank?
 
         @upd += 1
         true
