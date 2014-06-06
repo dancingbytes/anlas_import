@@ -7,11 +7,12 @@ module AnlasImport
 
     def initialize(file, manager)
 
-      @file       = file
-      @ins, @upd  = 0, 0
-      @file_name  = ::File.basename(@file)
-      @manager    = manager
-      @departments = {}
+      @file         = file
+      @ins, @upd    = 0, 0
+      @file_name    = ::File.basename(@file)
+      @manager      = manager
+      @departments  = {}
+      @skip_file    = false
 
     end # new
 
@@ -23,24 +24,36 @@ module AnlasImport
         log "Файл не найден: #{@file}"
       else
 
-        log "Файл: #{@file}\n"
+        log "Файл: #{@file}"
 
         start = Time.now.to_i
 
         work_with_file
 
-        log "[Обработаны отделы] #{@departments.values.join('. ')}."
-        log "Товаров: "
-        log "   добавлено: #{@ins}"
-        log "   обновлено: #{@upd}"
-        log "Затрачено времени: #{ '%0.3f' % (Time.now.to_f - start) } сек."
-        log ""
+        if skip_file?
+          log "Файл не используется для обработки. Удален."
+        else
+
+          log "[Обработаны отделы] #{@departments.values.join('. ')}."
+          log "Товаров: "
+          log "   добавлено: #{@ins}"
+          log "   обновлено: #{@upd}"
+
+          log "Затрачено времени: #{ '%0.3f' % (Time.now.to_f - start) } сек."
+
+        end
 
       end
+
+      log ""
 
       self
 
     end # parse_file
+
+    def skip_file!
+      @skip_file = true
+    end # skip_file!
 
     def load(
 
@@ -77,14 +90,14 @@ module AnlasImport
       # Код поставщика
       supplier_code = ::AnlasImport.supplier_code(department)
 
-      # Запоминаем отделы
-      @departments[ supplier_code || 0 ] ||= department
-
       # Если код поставщика не найден -- завершаем работу
       if supplier_code.nil?
         log "[Errors] Поставщик (#{department}) не зарегистрирован в системе. Товар: #{marking_of_goods} -> #{name}"
         return
       end
+
+      # Запоминаем отделы
+      @departments[supplier_code] ||= department
 
       unless (item = find_item(supplier_code, code_1c, marking_of_goods)).nil?
 
@@ -145,6 +158,10 @@ module AnlasImport
 
     private
 
+    def skip_file?
+      @skip_file == true
+    end # skip_file
+
     def work_with_file
 
       pt = ::AnlasImport::XmlParser.new(self)
@@ -152,16 +169,15 @@ module AnlasImport
       parser = ::Nokogiri::XML::SAX::Parser.new(pt)
       parser.parse_file(@file)
 
-      begin
+      if @skip_file
 
-        if ::AnlasImport::backup_dir && ::FileTest.directory?(::AnlasImport::backup_dir)
-          ::FileUtils.mv(@file, ::AnlasImport.backup_dir)
+        begin
+          ::FileUtils.rm_rf(@file)
+        rescue
         end
 
-      rescue SystemCallError
-        log "Не могу переместить файл `#{@file_name}` в `#{::AnlasImport.backup_dir}`"
-      ensure
-        ::FileUtils.rm_rf(@file)
+      else
+        ::AnlasImport.backup_file_to_dir(@file)
       end
 
     end # work_with_file
@@ -208,9 +224,11 @@ module AnlasImport
       item.marking_of_goods               = marking_of_goods || ""
       item.marking_of_goods_manufacturer  = marking_of_goods_manufacturer || ""
       item.name_1c                        = name
+
       item.supplier_purchasing_price      = supplier_purchasing_price
       item.supplier_wholesale_price       = supplier_wholesale_price
       item.purchasing_price               = purchasing_price
+
       item.available                      = available.try(:to_i) || 0
       item.country                        = country       || ""
       item.country_code                   = country_code  || ""
@@ -277,9 +295,10 @@ module AnlasImport
         item.set(:marking_of_goods, marking_of_goods)  unless marking_of_goods.blank?
         item.set(:marking_of_goods_manufacturer, marking_of_goods_manufacturer) unless marking_of_goods_manufacturer.nil?
         item.set(:name_1c, name)
-        item.set(:supplier_purchasing_price, supplier_purchasing_price)
-        item.set(:supplier_wholesale_price, supplier_wholesale_price)
-        item.set(:purchasing_price, purchasing_price)
+
+        item.set(:supplier_purchasing_price, supplier_purchasing_price) if supplier_purchasing_price > 0
+        item.set(:supplier_wholesale_price, supplier_wholesale_price)   if supplier_wholesale_price > 0
+        item.set(:purchasing_price, purchasing_price)                   if purchasing_price > 0
 
         item.set(:country, country)             unless country.nil?
         item.set(:country_code, country_code)   unless country_code.nil?

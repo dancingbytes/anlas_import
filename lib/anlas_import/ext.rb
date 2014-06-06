@@ -1,4 +1,6 @@
 # encoding: utf-8
+require 'unicode'
+
 module AnlasImport
 
   module StringExt
@@ -33,7 +35,48 @@ module AnlasImport
 end # AnlasImport
 
 class String
+
   include ::AnlasImport::StringExt
+
+  class_eval '
+
+    def downcase
+      Unicode::downcase(self)
+    end # downcase
+
+    def downcase!
+      self.replace downcase
+    end # downcase!
+
+    def upcase
+      Unicode::upcase(self)
+    end # upcase
+
+    def upcase!
+      self.replace upcase
+    end # upcase!
+
+    def capitalize
+      Unicode::capitalize(self)
+    end # capitalize
+
+    def first_capitalize
+
+      str     = self
+      str[0]  = Unicode::capitalize(str[0] || "")
+      str
+
+    end # first_capitalize
+
+    def capitalize!
+      self.replace capitalize
+    end # capitalize!
+
+    def first_capitalize!
+      self.replace first_capitalize
+    end # first_capitalize
+  '
+
 end # String
 
 class NilClass

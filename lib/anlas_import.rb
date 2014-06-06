@@ -100,6 +100,30 @@ module AnlasImport
     ::AnlasImport::Manager.run
   end # run
 
+  def backup_file_to_dir(file)
+
+    return false if file.nil?
+    return false if ::AnlasImport::backup_dir.nil?
+
+    begin
+
+      dir = Time.now.utc.strftime(::AnlasImport::backup_dir).gsub(/%[a-z]/, '_')
+
+      ::FileUtils.mkdir_p(dir, mode: 0755) unless ::FileTest.directory?(dir)
+      return false unless ::FileTest.directory?(dir)
+
+      ::FileUtils.mv(file, dir)
+
+    rescue SystemCallError
+      log "Не могу переместить файл `#{::File.basename(file)}` в `#{dir}`"
+    rescue => ex
+      log ex.inspect
+    ensure
+      ::FileUtils.rm_rf(file)
+    end
+
+  end # backup_file_to_dir
+
 end # AnlasImport
 
 require 'anlas_import/version'

@@ -6,15 +6,18 @@ module AnlasImport
 
     def initialize(saver)
 
-      @saver  = saver
-      @price_types = {}
-      @item   = {}
-      @level  = 0
-      @tags   = {}
+      @saver        = saver
+      @price_types  = {}
+      @item         = {}
+      @level        = 0
+      @tags         = {}
+      @skip_file    = false
 
     end # initialize
 
     def start_element(name, attrs = [])
+
+      return if skip_file?
 
       attrs  = ::Hash[attrs]
       @str   = ""
@@ -24,7 +27,8 @@ module AnlasImport
 
       case name
 
-        # 1C 8
+        when "Каталог"      then skip_file!
+
         when "ТипЦены"      then start_parse_price
         when "Предложение"  then start_parse_item
         when "Цена"         then start_parse_item_price
@@ -37,6 +41,8 @@ module AnlasImport
     end # start_element
 
     def end_element(name)
+
+      return if skip_file?
 
       @level -= 1
 
@@ -83,15 +89,24 @@ module AnlasImport
     end # end_element
 
     def characters(str)
+
+      return if skip_file?
       @str << str.clean_whitespaces unless str.blank?
+
     end # characters
 
     def error(string)
+
+      return if skip_file?
       @saver.log "[XML Errors] #{string}"
+
     end # error
 
     def warning(string)
+
+      return if skip_file
       @saver.log "[XML Warnings] #{string}"
+
     end # warning
 
     private
@@ -126,76 +141,87 @@ module AnlasImport
       @item[attr_name] = @str if for_item?
     end # grub_item
 
+    def skip_file!
+
+      @skip_file = true
+      @saver.skip_file!
+
+    end # skip_file!
+
+    def skip_file?
+      @skip_file == true
+    end # skip_file?
+
     def save_item(attrs)
 
       @saver.load(
 
         # Идентификатор в 1с (i)
         # code_1c
-        attrs["id"] || attrs["code_1c"],
+        attrs["code_1c"],
 
         # Отдел (s)
         attrs["department"],
 
         # marking_of_goods (s)
-        (attrs["artikul"] || attrs["marking_of_goods"]).try(:clean_whitespaces),
+        attrs["marking_of_goods"],
 
         # marking_of_goods_manufacturer (s)
-        (attrs["artikulprod"] || attrs["marking_of_goods_manufacturer"]).try(:clean_whitespaces),
+        attrs["marking_of_goods_manufacturer"],
 
         # name (s)
-        attrs["name"].try(:clean_whitespaces),
+        attrs["name"],
 
         # Цена закупа поставщика
         # supplier_purchasing_price (f)
-        (attrs["price_zakup"] || attrs["supplier_purchasing_price"]).try(:to_f).try(:round, 2) || 0,
+        attrs["supplier_purchasing_price"].try(:to_f).try(:round, 2) || 0,
 
         # Оптовая цена поставщика
         # supplier_wholesale_price (f)
-        (attrs["price_opt"] || attrs["supplier_wholesale_price"]).try(:to_f).try(:round, 2) || 0,
+        attrs["supplier_wholesale_price"].try(:to_f).try(:round, 2) || 0,
 
         # Цена закупа интернет-магазина
         # purchasing_price (f)
-        (attrs["price_kontr"] || attrs["purchasing_price"]).try(:to_f).try(:round, 2) || 0,
+        attrs["purchasing_price"].try(:to_f).try(:round, 2) || 0,
 
         # Наличие (остатки)
         # available (i)
-        (attrs["ostatok"] || attrs["available"]),
+        attrs["available"],
 
         # Страна призводитель
         # country (s)
-        attrs["country"].try(:clean_whitespaces).try(:gsub, /\-/, ""),
+        attrs["country"].try(:gsub, /\-/, ""),
 
         # Код страны производителя
         # country_code (i)
-        (attrs["country_kod"] || attrs["country_code"]).try(:to_i),
+        attrs["country_code"].try(:to_i) || 0,
 
         # Склад
         # storehouse (s)
-        (attrs["sklad"] || attrs["storehouse"]).try(:clean_whitespaces),
+        attrs["storehouse"],
 
         # Штрих-код
         # bar_code (s)
-        (attrs["shtrih_kod"] || attrs["bar_code"]).try(:clean_whitespaces),
+        attrs["bar_code"],
 
         # Вес в килограммах
         # weight (f)
-        (attrs["ves"] || attrs["weight"]).try(:to_i),
+        attrs["weight"].try(:to_i),
 
         # gtd_number (s)
-        (attrs["number_GTD"] || attrs["gtd_number"]).try(:clean_whitespaces).try(:gsub, /\-/, ""),
+        attrs["gtd_number"].try(:gsub, /\-/, ""),
 
         # Название товарной единицы
         # unit (s)
-        (attrs["ed"] || attrs["unit"]).try(:clean_whitespaces),
+        attrs["unit"],
 
         # Код товарной единицы
         # unit_code (i)
-        (attrs["okei"] || attrs["unit_code"]).try(:to_i),
+        attrs["unit_code"].try(:to_i),
 
         # Бренд
         # brand_name (s)
-        attrs["brand_name"].try(:clean_whitespaces)
+        attrs["brand_name"]
 
       )
 
@@ -248,8 +274,13 @@ module AnlasImport
         case @price_types[@item_price_id]
 
           when "Опт" then
+
             @item["supplier_wholesale_price"] = @item_price
-            @item["purchasing_price"]         = @item_price * (1 - @item_discount*0.01) if @item_discount
+            unless @item_discount.nil?
+              @item["purchasing_price"]       = @item_price
+            else
+              @item["purchasing_price"]       = @item_price * (1 - @item_discount*0.01)
+            end
 
           when "Закупочная" then
             @item["supplier_purchasing_price"] = @item_price
@@ -288,21 +319,6 @@ module AnlasImport
 
       if attrs['marking_of_goods'].blank?
         @saver.log "[Errors 1C 8] Не найден артикул у товара: #{attrs['name']}"
-        return false
-      end
-
-      if attrs['supplier_purchasing_price'].blank?
-        @saver.log "[Errors 1C 8] Не найдена закупочная цена у товара: #{attrs['marking_of_goods']} - #{attrs['name']}"
-        return false
-      end
-
-      if attrs['supplier_wholesale_price'].blank?
-        @saver.log "[Errors 1C 8] Не найдена оптовая цена у товара: #{attrs['marking_of_goods']} - #{attrs['name']}"
-        return false
-      end
-
-      if attrs['purchasing_price'].blank?
-        @saver.log "[Errors 1C 8] Не найдена цена у товара: #{attrs['marking_of_goods']} - #{attrs['name']}"
         return false
       end
 
