@@ -296,9 +296,9 @@ module AnlasImport
         item.set(:marking_of_goods_manufacturer, marking_of_goods_manufacturer) unless marking_of_goods_manufacturer.nil?
         item.set(:name_1c, name)
 
-        item.set(:supplier_purchasing_price, supplier_purchasing_price) if supplier_purchasing_price > 0
-        item.set(:supplier_wholesale_price, supplier_wholesale_price)   if supplier_wholesale_price > 0
-        item.set(:purchasing_price, purchasing_price)                   if purchasing_price > 0
+        item.set(:supplier_purchasing_price, supplier_purchasing_price) # if supplier_purchasing_price > 0
+        item.set(:supplier_wholesale_price, supplier_wholesale_price)   # if supplier_wholesale_price > 0
+        item.set(:purchasing_price, purchasing_price)                   # if purchasing_price > 0
 
         item.set(:country, country)             unless country.nil?
         item.set(:country_code, country_code)   unless country_code.nil?
@@ -311,6 +311,8 @@ module AnlasImport
 
         item.set(:imported_at, ::Time.now.utc)
         item.set(:available, available.try(:to_i) || 0) unless available.blank?
+
+        item.update_sphinx
 
         @upd += 1
         true

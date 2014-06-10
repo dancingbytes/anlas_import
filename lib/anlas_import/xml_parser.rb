@@ -74,9 +74,6 @@ module AnlasImport
         when "ЦенаЗаЕдиницу"  then
           @item_price     = get_price(@str)  if for_item_price?
 
-        when "ПроцентСкидки"  then
-          @item_discount  = get_price(@str) if for_item_price?
-
         when "ИдТипаЦены"     then
           @item_price_id  = @str  if for_item_price?
 
@@ -273,17 +270,14 @@ module AnlasImport
 
         case @price_types[@item_price_id]
 
-          when "Опт" then
+          when "Опт - 5%" then
+            @item["purchasing_price"]           = @item_price
 
-            @item["supplier_wholesale_price"] = @item_price
-            unless @item_discount.nil?
-              @item["purchasing_price"]       = @item_price
-            else
-              @item["purchasing_price"]       = @item_price * (1 - @item_discount*0.01)
-            end
+          when "Опт" then
+            @item["supplier_wholesale_price"]   = @item_price
 
           when "Закупочная" then
-            @item["supplier_purchasing_price"] = @item_price
+            @item["supplier_purchasing_price"]  = @item_price
 
         end # case
 
@@ -291,7 +285,6 @@ module AnlasImport
 
       @item_price     = nil
       @item_price_id  = nil
-      @item_discount  = nil
       @start_parse_item_price = false
 
     end # stop_parse_item_price
@@ -299,6 +292,7 @@ module AnlasImport
     def validate_1c_8(attrs)
 
       if attrs.empty?
+        @saver.log "[Errors 1C 8] У товара не задан ни один аттрибут"
         return false
       end
 
