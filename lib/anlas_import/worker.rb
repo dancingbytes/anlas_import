@@ -5,12 +5,15 @@ module AnlasImport
   # при разборе xml-файла.
   class Worker
 
-    def initialize(file, manager)
+    def self.parse(file)
+      new(file).parse
+    end # self.parse
+
+    def initialize(file)
 
       @file         = file
       @ins, @upd    = 0, 0
       @file_name    = ::File.basename(@file)
-      @manager      = manager
       @departments  = {}
       @skip_file    = false
 
@@ -153,7 +156,7 @@ module AnlasImport
     end # load
 
     def log(msg)
-      @manager.log(msg)
+      ::AnlasImport.log(msg)
     end # log
 
     private

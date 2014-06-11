@@ -10,26 +10,21 @@ module AnlasImport
     end # self.run
 
     def initialize
+      @has_files = false
     end # new
 
     def run
 
-      @has_files = false
-
       extract_zip_files
       processing
-      close_logger
+      ::::AnlasImport.close_logger
 
       yield if @has_files && block_given?
 
     end # run
 
-    def log(msg = "")
-
-      create_logger unless @logger
-      @logger.error(msg)
-      msg
-
+    def log(msg)
+      ::AnlasImport.log(msg)
     end # log
 
     private
@@ -47,7 +42,7 @@ module AnlasImport
       @has_files = true
       # Сортируем по дате последнего доступа по-возрастанию
       files.sort{ |a, b| ::File.new(a).mtime <=> ::File.new(b).atime }.each do |xml_file|
-        ::AnlasImport::Worker.new(xml_file, self).parse
+        ::AnlasImport::Worker.parse(xml_file)
       end # each
 
       self
@@ -97,30 +92,6 @@ module AnlasImport
       end # Dir.glob
 
     end # extract_zip_files
-
-    def create_logger
-
-      return unless ::AnlasImport::log_dir && ::FileTest.directory?(::AnlasImport::log_dir)
-      return if @logger
-
-      ::FileUtils.mkdir_p(::AnlasImport::log_dir) unless ::FileTest.directory?(::AnlasImport::log_dir)
-      log_file = ::File.open(
-        ::File.join(::AnlasImport::log_dir, "import.log"),
-        ::File::WRONLY | ::File::APPEND | ::File::CREAT
-      )
-      log_file.sync = true
-      @logger = ::Logger.new(log_file, 'weekly')
-      @logger
-
-    end # create_logger
-
-    def close_logger
-
-      return unless @logger
-      @logger.close
-      @logger = nil
-
-    end # close_logger
 
   end # Manager
 

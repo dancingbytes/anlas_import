@@ -124,6 +124,40 @@ module AnlasImport
 
   end # backup_file_to_dir
 
+  def log(msg = "")
+
+    create_logger unless @logger
+    @logger.error(msg)
+    msg
+
+  end # log
+
+  def close_logger
+
+    return unless @logger
+    @logger.close
+    @logger = nil
+
+  end # close_logger
+
+  private
+
+  def create_logger
+
+    return unless ::AnlasImport::log_dir && ::FileTest.directory?(::AnlasImport::log_dir)
+    return if @logger
+
+    ::FileUtils.mkdir_p(::AnlasImport::log_dir) unless ::FileTest.directory?(::AnlasImport::log_dir)
+    log_file = ::File.open(
+      ::File.join(::AnlasImport::log_dir, "import.log"),
+      ::File::WRONLY | ::File::APPEND | ::File::CREAT
+    )
+    log_file.sync = true
+    @logger = ::Logger.new(log_file, 'weekly')
+    @logger
+
+  end # create_logger
+
 end # AnlasImport
 
 require 'anlas_import/version'
@@ -140,3 +174,6 @@ if defined?(::Rails)
   require 'anlas_import/railtie'
 end
 
+at_exit {
+  ::AnlasImport.close_logger
+}
