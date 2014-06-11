@@ -17,7 +17,7 @@ module AnlasImport
 
       extract_zip_files
       processing
-      ::::AnlasImport.close_logger
+      ::AnlasImport.close_logger
 
       yield if @has_files && block_given?
 
