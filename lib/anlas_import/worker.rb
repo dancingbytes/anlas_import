@@ -315,6 +315,8 @@ module AnlasImport
         item.set(:imported_at, ::Time.now.utc)
         item.set(:available, available.try(:to_i) || 0) unless available.blank?
 
+        item.set(:base_price, item.update_base_price)
+
         item.update_sphinx
 
         @upd += 1
