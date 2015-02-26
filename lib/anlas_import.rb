@@ -1,6 +1,6 @@
 # encoding: utf-8
 require 'logger'
-require 'zip/zip'
+require 'zip'
 require 'fileutils'
 require 'yaml'
 require 'nokogiri'

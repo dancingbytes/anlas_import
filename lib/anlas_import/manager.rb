@@ -61,7 +61,7 @@ module AnlasImport
         i+= 1
         begin
 
-          ::Zip::ZipFile.open(zip) { |zip_file|
+          ::Zip::File.open(zip) { |zip_file|
 
             zip_file.each { |f|
 
