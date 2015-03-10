@@ -11,6 +11,7 @@ module AnlasImport
         loop do
 
           ::AnlasImport::run
+          ::GC.start
           sleep ::AnlasImport::wait
 
         end # loop
