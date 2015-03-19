@@ -9,6 +9,8 @@ module AnlasImport
 
   extend self
 
+  FILE_LOCK = '/tmp/anlas_import.lock'.freeze
+
   DEPS = {
 
     'аксессуары'  => 1,
@@ -37,13 +39,6 @@ module AnlasImport
   def supplier_code(name)
     ::AnlasImport::DEPS[name.downcase]
   end # supplier_code
-
-  def proc_name(v = nil)
-
-    @proc_name = v unless v.blank?
-    @proc_name
-
-  end # proc_name
 
   def login(v = nil)
 
@@ -75,13 +70,6 @@ module AnlasImport
 
   end # backup_dir
 
-  def daemon_log(v = nil)
-
-    @daemon_log = v unless v.blank?
-    @daemon_log
-
-  end # daemon_log
-
   def log_dir(v = nil)
 
     @log_dir = v unless v.blank?
@@ -89,16 +77,32 @@ module AnlasImport
 
   end # log_dir
 
-  def wait(v = nil)
-
-    @wait = v.abs if v.is_a?(::Fixnum)
-    @wait || 5 * 60
-
-  end # wait
 
   def run
-    ::AnlasImport::Manager.run
+
+    begin
+      f = ::File.new(::AnlasImport::FILE_LOCK, ::File::RDWR|::File::CREAT, 0400)
+      return if f.flock(::File::LOCK_EX) === false
+    rescue ::Errno::EACCES
+      return
+    end
+
+    begin
+      ::AnlasImport::Manager.run
+    rescue => ex
+      log ex.inspect
+    ensure
+      ::FileUtils.rm(::AnlasImport::FILE_LOCK, force: true)
+    end
+
   end # run
+
+  def update(v = nil)
+
+    @update_callback = v if v.is_a?(::Proc)
+    @update_callback
+
+  end # update
 
   def backup_file_to_dir(file)
 
@@ -128,6 +132,9 @@ module AnlasImport
 
     create_logger unless @logger
     @logger.error(msg)
+
+    (@dump_log ||= "") << "#{msg}\n"
+
     msg
 
   end # log
@@ -139,6 +146,14 @@ module AnlasImport
     @logger = nil
 
   end # close_logger
+
+  def dump_log
+    @dump_log || ""
+  end # dump_log
+
+  def clear_log
+    @dump_log = nil
+  end # clear_log
 
   private
 
@@ -161,9 +176,7 @@ module AnlasImport
 end # AnlasImport
 
 require 'anlas_import/version'
-
-require 'anlas_import/ext'
-require 'anlas_import/mailer'
+require 'anlas_import/util'
 
 require 'anlas_import/xml_parser'
 require 'anlas_import/worker'
@@ -173,7 +186,3 @@ if defined?(::Rails)
   require 'anlas_import/engine'
   require 'anlas_import/railtie'
 end
-
-at_exit {
-  ::AnlasImport.close_logger
-}

@@ -17,6 +17,8 @@ module AnlasImport
       @departments  = {}
       @skip_file    = false
 
+      ::AnlasImport.clear_log
+
     end # new
 
     def parse
@@ -46,6 +48,13 @@ module AnlasImport
 
         end
 
+      end
+
+      begin
+        clb = ::AnlasImport.update
+        clb.call(::AnlasImport.dump_log) if clb.is_a?(::Proc)
+      rescue => ex
+        log ex.inspect
       end
 
       log ""
@@ -220,6 +229,8 @@ module AnlasImport
 
       )
 
+      name = ::AnlasImport::Util.xml_unescape(name)
+
       item                                = ::Item.new
 
       item.code_1c                        = code_1c
@@ -292,6 +303,8 @@ module AnlasImport
       )
 
       begin
+
+        name = ::AnlasImport::Util.xml_unescape(name)
 
         item.set(:code_1c, code_1c)
         item.set(:supplier_code, supplier_code)
