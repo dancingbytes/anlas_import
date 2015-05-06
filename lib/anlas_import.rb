@@ -133,10 +133,10 @@ module AnlasImport
 
   def log(msg = "")
 
-    create_logger unless @logger
-    @logger.error(msg)
-
     (@dump_log ||= "") << "#{msg}\n"
+
+    create_logger       unless @logger
+    @logger.error(msg)  if @logger
 
     msg
 
@@ -162,8 +162,8 @@ module AnlasImport
 
   def create_logger
 
-    return unless ::AnlasImport::log_dir && ::FileTest.directory?(::AnlasImport::log_dir)
     return if @logger
+    return unless ::AnlasImport::log_dir && ::FileTest.directory?(::AnlasImport::log_dir)
 
     ::FileUtils.mkdir_p(::AnlasImport::log_dir) unless ::FileTest.directory?(::AnlasImport::log_dir)
     log_file = ::File.open(
