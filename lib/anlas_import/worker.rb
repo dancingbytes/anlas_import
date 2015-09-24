@@ -111,7 +111,7 @@ module AnlasImport
       # Запоминаем отделы
       @departments[supplier_code] ||= department
 
-      unless (item = find_item(supplier_code, code_1c, marking_of_goods)).nil?
+      unless (item = find_item(code_1c, marking_of_goods)).nil?
 
         # Если товар по заданным параметрам существует -- обновляем его.
         update_item(
@@ -194,13 +194,11 @@ module AnlasImport
 
     end # work_with_file
 
-    def find_item(supplier_code, code_1c, marking_of_goods)
+    def find_item(code_1c, marking_of_goods)
 
       ::Item.where({
-        supplier_code:  supplier_code,
-        code_1c:        code_1c
+        code_1c: code_1c
       }).first || ::Item.where({
-        supplier_code:    supplier_code,
         marking_of_goods: marking_of_goods
       }).first
 
