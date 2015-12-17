@@ -275,6 +275,7 @@ module AnlasImport
 
           when "Опт" then
             @item["supplier_wholesale_price"]   = @item_price
+            @item["purchasing_price"]           = (@item_price*0.95).to_f2
 
           when "Закупочная" then
             @item["supplier_purchasing_price"]  = @item_price
