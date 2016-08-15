@@ -101,7 +101,7 @@ module AnlasImport
 
     def warning(string)
 
-      return if skip_file
+      return if skip_file?
       @saver.log "[XML Warnings] #{string}"
 
     end # warning
