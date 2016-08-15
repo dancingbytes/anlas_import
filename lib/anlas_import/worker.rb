@@ -304,6 +304,32 @@ module AnlasImport
 
         name = ::AnlasImport::Util.xml_unescape(name)
 
+        item.code_1c          = code_1c
+        item.supplier_code    = supplier_code
+        item.marking_of_goods = marking_of_goods                            unless marking_of_goods.blank?
+        item.marking_of_goods_manufacturer = marking_of_goods_manufacturer  unless marking_of_goods_manufacturer.nil?
+        item.name_1c          = name
+
+        item.supplier_purchasing_price  = supplier_purchasing_price   # if supplier_purchasing_price > 0
+        item.supplier_wholesale_price   = supplier_wholesale_price    # if supplier_wholesale_price > 0
+        item.purchasing_price           = purchasing_price            # if purchasing_price > 0
+
+        item.country      = country         unless country.nil?
+        item.country_code = country_code    unless country_code.nil?
+        item.storehouse   = storehouse      unless storehouse.nil?
+        item.bar_code     = bar_code        unless bar_code.nil?
+        item.weight       = weight          unless weight.nil?
+        item.gtd_number   = gtd_number      unless gtd_number.nil?
+        item.unit         = unit            unless unit.nil?
+        item.unit_code    = unit_code       unless unit_code.nil?
+
+        item.imported_at  = ::Time.now.utc
+        item.available    = available.try(:to_i) || 0
+
+        item.base_price   = item.update_base_price
+        item.save(validate: false)
+
+=begin
         item.set(:code_1c, code_1c)
         item.set(:supplier_code, supplier_code)
         item.set(:marking_of_goods, marking_of_goods)  unless marking_of_goods.blank?
@@ -329,6 +355,7 @@ module AnlasImport
         item.set(:base_price, item.update_base_price)
 
         item.update_sphinx
+=end
 
         @upd += 1
         true
