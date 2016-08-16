@@ -329,34 +329,6 @@ module AnlasImport
         item.base_price   = item.update_base_price
         item.save(validate: false)
 
-=begin
-        item.set(:code_1c, code_1c)
-        item.set(:supplier_code, supplier_code)
-        item.set(:marking_of_goods, marking_of_goods)  unless marking_of_goods.blank?
-        item.set(:marking_of_goods_manufacturer, marking_of_goods_manufacturer) unless marking_of_goods_manufacturer.nil?
-        item.set(:name_1c, name)
-
-        item.set(:supplier_purchasing_price, supplier_purchasing_price) # if supplier_purchasing_price > 0
-        item.set(:supplier_wholesale_price, supplier_wholesale_price)   # if supplier_wholesale_price > 0
-        item.set(:purchasing_price, purchasing_price)                   # if purchasing_price > 0
-
-        item.set(:country, country)             unless country.nil?
-        item.set(:country_code, country_code)   unless country_code.nil?
-        item.set(:storehouse, storehouse)       unless storehouse.nil?
-        item.set(:bar_code, bar_code)           unless bar_code.nil?
-        item.set(:weight, weight)               unless weight.nil?
-        item.set(:gtd_number, gtd_number)       unless gtd_number.nil?
-        item.set(:unit, unit)                   unless unit.nil?
-        item.set(:unit_code, unit_code)         unless unit_code.nil?
-
-        item.set(:imported_at, ::Time.now.utc)
-        item.set(:available, available.try(:to_i) || 0) unless available.blank?
-
-        item.set(:base_price, item.update_base_price)
-
-        item.update_sphinx
-=end
-
         @upd += 1
         true
 

@@ -292,11 +292,6 @@ module AnlasImport
 
     def validate_1c_8(attrs)
 
-      if attrs.empty?
-        @saver.log "[Errors 1C 8] У товара не задан ни один аттрибут"
-        return false
-      end
-
       if attrs['code_1c'].blank?
         @saver.log "[Errors 1C 8] Не найден идентификатор у товара: #{attrs['marking_of_goods']}"
         return false
