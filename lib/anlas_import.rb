@@ -4,6 +4,7 @@ require 'zip'
 require 'fileutils'
 require 'yaml'
 require 'nokogiri'
+require 'base64'
 
 module AnlasImport
 

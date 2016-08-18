@@ -23,7 +23,7 @@ class ImportController < ApplicationController
 
     file_path = File.join(AnlasImport::import_dir, "#{rand}-#{Time.now.to_f}.zip")
     File.open(file_path, 'wb') do |f|
-      f.write request.body.read
+      f.write read_file
     end
 
     render(:text => "success", :layout => false) and return
@@ -39,5 +39,15 @@ class ImportController < ApplicationController
     end
 
   end # auth
+
+  def read_file
+
+    unless params[:data].nil?
+      ::Base64.decode64(params[:data].read)
+    else
+      request.body.read
+    end
+
+  end # read_file
 
 end # ImportController
