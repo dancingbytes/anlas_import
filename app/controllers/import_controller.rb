@@ -45,7 +45,7 @@ class ImportController < ApplicationController
     unless params[:data].nil?
       ::Base64.decode64(params[:data].read)
     else
-      request.body.read
+      request.raw_post.read
     end
 
   end # read_file
