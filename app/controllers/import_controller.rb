@@ -21,12 +21,19 @@ class ImportController < ApplicationController
 
   def save_file
 
-    file_path = File.join(AnlasImport::import_dir, "#{rand}-#{Time.now.to_f}.zip")
+    file_path = File.join(
+      AnlasImport::import_dir,
+      "#{rand}-#{Time.now.to_f}.zip"
+    )
+
     File.open(file_path, 'wb') do |f|
       f.write read_file
     end
 
-    render(:text => "success", :layout => false) and return
+    # Создаем задачу по обработке файла
+    ::AnlasImport.run_async(file_path)
+
+    render(text: "success", layout: false) and return
 
   end # save_file
 

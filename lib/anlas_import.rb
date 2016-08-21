@@ -10,8 +10,6 @@ module AnlasImport
 
   extend self
 
-  FILE_LOCK = '/tmp/anlas_import.lock'.freeze
-
   DEPS = {
 
     'аксессуары'  => 1,
@@ -60,6 +58,10 @@ module AnlasImport
   def import_dir(v = nil)
 
     @import_dir = v unless v.blank?
+    @import_dir ||= ::File.join(::Rails.root, "tmp", "exchange_1c")
+
+    ::FileUtils.mkdir_p(@import_dir) unless ::FileTest.directory?(@import_dir)
+
     @import_dir
 
   end # import_dir
@@ -74,29 +76,37 @@ module AnlasImport
   def log_dir(v = nil)
 
     @log_dir = v unless v.blank?
-    @log_dir || ::File.join(::Rails.root, "log")
+    @log_dir ||= ::File.join(::Rails.root, "log")
+
+    ::FileUtils.mkdir_p(@log_dir) unless ::FileTest.directory?(@log_dir)
+
+    @log_dir
 
   end # log_dir
 
+  def run_async(file_path)
 
-  def run
+    ::AnlasImportWorker.perform_async(file_path)
+    self
 
-    begin
-      f = ::File.new(::AnlasImport::FILE_LOCK, ::File::RDWR|::File::CREAT, 0400)
-      return if f.flock(::File::LOCK_EX) === false
-    rescue ::Errno::EACCES
-      return
-    end
+  end # run_async
 
-    begin
-      ::AnlasImport::Manager.run
-    rescue => ex
-      log ex.inspect
-    ensure
-      ::FileUtils.rm(::AnlasImport::FILE_LOCK, force: true)
-    end
+  def run_async_all
 
-  end # run
+    files = ::Dir.glob( ::File.join(import_dir, '**', '{*.xml,*.zip}') )
+
+    # Сортируем по дате последнего доступа по-возрастанию
+    files.sort { |a, b|
+      ::File.new(a).mtime <=> ::File.new(b).atime
+    }.each do |file_path|
+
+      run_async(file_path)
+
+    end # each
+
+    self
+
+  end # run_async_all
 
   def update(v = nil)
 

@@ -2,7 +2,7 @@ namespace :anlas_import do
 
   desc 'Обработка выгрузки'
   task :run => :environment do
-    ::AnlasImport.run
+    ::AnlasImport.run_async_all
   end # run
 
 end # anlas_import

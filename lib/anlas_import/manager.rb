@@ -13,85 +13,85 @@ module AnlasImport
       @has_files = false
     end # new
 
-    def run
+    def run(file_path)
 
-      extract_zip_files
-      processing
+      # Распаковываем zip архив, если такой имеется.
+      # Подготавливаем список файлов к обработке
+      files = if is_zip?(file_path)
+        extract_zip_file(file_path)
+      else
+        [file_path]
+      end
+
+      files.each { |xml_file|
+        ::AnlasImport::Worker.parse(xml_file)
+      }
+
       ::AnlasImport.close_logger
 
       yield if @has_files && block_given?
 
     end # run
 
+    private
+
     def log(msg)
       ::AnlasImport.log(msg)
     end # log
 
-    private
+    def import_dir
+      ::AnlasImport::import_dir
+    end # import_dir
 
-    def processing
+    def extract_zip_file(file_name)
 
-      unless ::AnlasImport::import_dir && ::FileTest.directory?(::AnlasImport::import_dir)
-        log "Директория #{::AnlasImport::import_dir} не существует!"
-        return
+      files = []
+      begin
+
+        ::Zip::File.open(file_name) { |zip_file|
+
+          zip_file.each { |f|
+
+            # Создаем дополнительную вложенность т.к. 1С 8 выгружает всегда одни и теже
+            # навания файлов, и если таких выгрузок будет много, то при распковке файлы
+            # будут перезатираться
+
+            f_path = ::File.join(
+              import_dir,
+              f.file? ? "#{rand}-#{::Time.now.to_f}-#{f.name}" : f.name
+            )
+
+            files << f_path
+
+            ::FileUtils.rm_rf(f_path) if ::File.exist?(f_path)
+            ::FileUtils.mkdir_p(::File.dirname(f_path))
+
+            zip_file.extract(f, f_path)
+
+          } # each
+
+        } # open
+
+        ::FileUtils.rm_rf(file_name)
+
+      rescue => e
+        log("[extract_zip_file] #{e.backtrace.join('\n')}")
       end
 
-      files = ::Dir.glob( ::File.join(::AnlasImport::import_dir, "**", "*.xml") )
-      return unless files && files.size > 0
+      files
 
-      @has_files = true
-      # Сортируем по дате последнего доступа по-возрастанию
-      files.sort{ |a, b| ::File.new(a).mtime <=> ::File.new(b).atime }.each do |xml_file|
-        ::AnlasImport::Worker.parse(xml_file)
-      end # each
+    end # extract_zip_file
 
-      self
+    def is_zip?(file_name)
 
-    end # processing
+      begin
+        ::Zip::File.open(file_name) { |zip_file| }
+        true
+      rescue
+        false
+      end
 
-    def extract_zip_files
-
-      # Ищем и распаковываем все zip-архивы, после - удаляем
-      files = ::Dir.glob( ::File.join(::AnlasImport::import_dir, "**", "*.zip") )
-      return unless files && files.size > 0
-
-      i = 0
-      files.each do |zip|
-
-        i+= 1
-        begin
-
-          ::Zip::File.open(zip) { |zip_file|
-
-            zip_file.each { |f|
-
-              # Создаем дополнительную вложенность т.к. 1С 8 выгружает всегда одни и теже
-              # навания файлов, и если таких выгрузок будет много, то при распковке файлы
-              # будут перезатираться
-
-              f_path = ::File.join(
-                ::AnlasImport::import_dir,
-                "#{i}",
-                f.file? ? "#{rand}-#{Time.now.to_f}-#{f.name}" : f.name
-              )
-
-              ::FileUtils.rm_rf f_path if ::File.exist?(f_path)
-              ::FileUtils.mkdir_p(::File.dirname(f_path))
-
-              zip_file.extract(f, f_path)
-
-            } # each
-
-          } # open
-
-          ::FileUtils.rm_rf(zip)
-
-        rescue
-        end
-
-      end # Dir.glob
-
-    end # extract_zip_files
+    end # is_zip?
 
   end # Manager
 
