@@ -23,7 +23,7 @@ class ImportController < ApplicationController
 
     file_path = File.join(
       AnlasImport::import_dir,
-      "#{rand}-#{Time.now.to_f}.zip"
+      "#{Time.now.to_f}-#{params[:filename]}"
     )
 
     File.open(file_path, 'wb') do |f|
