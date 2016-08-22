@@ -5,8 +5,8 @@ module AnlasImport
   # Запуск обработчика. Отправка отчетов.
   class Manager
 
-    def self.run
-      new.run
+    def self.run(file_path)
+      new.run(file_path)
     end # self.run
 
     def initialize
