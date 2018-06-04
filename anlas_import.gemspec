@@ -21,8 +21,8 @@ Gem::Specification.new do |s|
   s.licenses          = ['BSD']
 
   s.add_dependency 'railties'
-  s.add_dependency 'nokogiri', '~> 1.6.0'
-  s.add_dependency 'rubyzip',  '1.1.7'
+  s.add_dependency 'nokogiri', '~> 1.8.0'
+  s.add_dependency 'rubyzip',  '~> 1.1'
   s.add_dependency 'logger'
 
 end
