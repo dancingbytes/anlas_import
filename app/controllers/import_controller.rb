@@ -42,10 +42,12 @@ class ImportController < ApplicationController
 
   def read_file
 
-    unless params[:data].nil?
+    return request.body.read if params[:data].nil?
+
+    if params[:data].is_a?(::ActionDispatch::Http::UploadedFile)
       ::Base64.decode64(params[:data].read)
     else
-      request.body.read
+      ::Base64.decode64(params[:data])
     end
 
   end # read_file
