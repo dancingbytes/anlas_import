@@ -8,8 +8,6 @@ class ImportController < ApplicationController
 
   def index
 
-    puts "[ImportController] #{params.inspect}"
-
     case params[:mode]
       when 'checkauth'
         render(:text => "success\nimport_1c\n#{rand(9999)}", :layout => false) and return
@@ -18,8 +16,6 @@ class ImportController < ApplicationController
       else
         render(:text => "success", :layout => false) and return
     end
-
-    puts
 
   end # index
 
